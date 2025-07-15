@@ -413,79 +413,6 @@ OPENAI_API_KEY=your_openai_key
 ETHEREUM_RPC_URL=your_ethereum_rpc
 PRIVATE_KEY=your_contract_deployer_key
 HACKCARBON_CONTRACT_ADDRESS=0x...
-```
-
-## 📊 Database Schema
-
-### Core Tables
-
-```sql
--- Companies table
-CREATE TABLE companies (
-    id UUID PRIMARY KEY,
-    name VARCHAR NOT NULL,
-    email VARCHAR UNIQUE NOT NULL,
-    address JSONB,
-    industry VARCHAR,
-    size VARCHAR,
-    total_emissions DECIMAL DEFAULT 0,
-    verification_status VARCHAR DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Emissions table
-CREATE TABLE emissions (
-    id UUID PRIMARY KEY,
-    company_id UUID REFERENCES companies(id),
-    category VARCHAR NOT NULL,
-    amount DECIMAL NOT NULL,
-    unit VARCHAR DEFAULT 'kg_co2e',
-    source VARCHAR,
-    evidence_url VARCHAR,
-    recorded_at TIMESTAMP DEFAULT NOW()
-);
-
--- Carbon credits table
-CREATE TABLE carbon_credits (
-    id UUID PRIMARY KEY,
-    project_name VARCHAR NOT NULL,
-    project_type VARCHAR NOT NULL,
-    standard VARCHAR, -- VCS, Gold Standard, etc.
-    vintage INTEGER,
-    price_per_ton DECIMAL NOT NULL,
-    total_quantity DECIMAL NOT NULL,
-    available_quantity DECIMAL NOT NULL,
-    status VARCHAR DEFAULT 'available'
-);
-
--- Purchases table
-CREATE TABLE carbon_credit_purchases (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES companies(id),
-    credit_id UUID REFERENCES carbon_credits(id),
-    quantity DECIMAL NOT NULL,
-    price_per_ton DECIMAL NOT NULL,
-    total_cost DECIMAL NOT NULL,
-    status VARCHAR DEFAULT 'completed',
-    retired_quantity DECIMAL DEFAULT 0,
-    purchase_date TIMESTAMP DEFAULT NOW(),
-    last_retirement_date TIMESTAMP
-);
-
--- API usage logs
-CREATE TABLE api_usage_logs (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES companies(id),
-    endpoint VARCHAR NOT NULL,
-    method VARCHAR NOT NULL,
-    timestamp TIMESTAMP DEFAULT NOW(),
-    emission_amount DECIMAL,
-    offset_cost DECIMAL,
-    offset_done BOOLEAN DEFAULT FALSE,
-    response_status INTEGER,
-    ip_address INET
-);
-```
 
 ## 🔗 API Documentation
 
@@ -529,58 +456,6 @@ curl -H "X-API-Key: your_api_key" \
 
 ### Complete API documentation available at: `/docs` (Swagger UI)
 
-## 🧪 Testing
-
-### Frontend Testing
-```bash
-cd frontend
-npm run test              # Unit tests with Vitest
-npm run test:e2e         # E2E tests with Playwright
-npm run test:coverage    # Coverage report
-```
-
-### Backend Testing
-```bash
-cd backend
-pytest                   # All tests
-pytest tests/unit/       # Unit tests only
-pytest tests/integration/ # Integration tests
-pytest --cov=app         # Coverage report
-```
-
-### Extension Testing
-```bash
-cd extension
-npm run test             # Jest unit tests
-npm run test:e2e         # Cross-browser E2E tests
-```
-
-## 🚀 Deployment
-
-### Production Deployment
-
-1. **Docker Production Build**
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-2. **Kubernetes Deployment**
-```bash
-kubectl apply -f k8s/
-```
-
-3. **Vercel Frontend Deployment**
-```bash
-cd frontend
-vercel --prod
-```
-
-4. **Railway Backend Deployment**
-```bash
-cd backend
-railway deploy
-```
-
 ### Environment-Specific Configurations
 
 - **Development**: Hot reloading, debug logs, test data
@@ -614,10 +489,6 @@ railway deploy
 - **Tracing**: OpenTelemetry for distributed tracing
 - **Alerting**: PagerDuty integration for critical issues
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](docs/CONTRIBUTING.md) for details.
-
 ### Development Workflow
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
@@ -641,19 +512,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Open Source**: Built on amazing open-source technologies
 - **Community**: Thanks to all contributors and the carbon offsetting community
 - **Partners**: Carbon project developers and verification bodies
-
-## 📞 Support & Contact
-
-- **Documentation**: [docs.carboncredit.com](https://docs.carboncredit.com)
-- **API Support**: api@carboncredit.com
-- **General Support**: support@carboncredit.com
-- **Enterprise Sales**: sales@carboncredit.com
-- **Security Issues**: security@carboncredit.com
-
-### Community
-- **Discord**: [Join our community](https://discord.gg/carboncredit)
-- **Twitter**: [@CarbonCreditPlatform](https://twitter.com/carboncreditplatform)
-- **LinkedIn**: [Company Page](https://linkedin.com/company/carboncreditplatform)
 
 ---
 
