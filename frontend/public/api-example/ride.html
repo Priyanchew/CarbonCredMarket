@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Carbon Offset Demo - Carbon Credit API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .ride-animation {
+            animation: slide 2s ease-in-out infinite alternate;
+        }
+        @keyframes slide {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-4xl mx-auto py-6 px-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Ride Carbon Offset Demo</h1>
+                    <p class="text-gray-600 mt-2">Experience our API with a live ride-sharing example</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="/api-docs.html" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        API Docs
+                    </a>
+                    <a href="/dashboard" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <!-- Demo Description -->
+        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+            <h2 class="text-lg font-semibold text-green-900 mb-2">Demo Overview</h2>
+            <p class="text-green-800">
+                This demo simulates a ride-sharing app that uses our Carbon Credit API to calculate 
+                vehicle emissions and offer carbon offsetting. Enter your trip details below to see 
+                how easy it is to integrate carbon offsetting into transportation apps.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Ride Booking Form -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Book Your Ride</h2>
+                
+                <form id="rideForm" class="space-y-4">
+                    <div>
+                        <label for="pickup" class="block text-sm font-medium text-gray-700 mb-1">Pickup Location</label>
+                        <input type="text" id="pickup" name="pickup" value="Downtown Office" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    
+                    <div>
+                        <label for="destination" class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+                        <input type="text" id="destination" name="destination" value="Airport Terminal" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    
+                    <div>
+                        <label for="distance" class="block text-sm font-medium text-gray-700 mb-1">Distance (miles)</label>
+                        <input type="number" id="distance" name="distance" value="25" min="1" max="500" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    
+                    <div>
+                        <label for="vehicleType" class="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+                        <select id="vehicleType" name="vehicleType" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                            <option value="standard">Standard Car</option>
+                            <option value="suv">SUV</option>
+                            <option value="luxury">Luxury Car</option>
+                            <option value="electric">Electric Vehicle</option>
+                            <option value="hybrid">Hybrid Vehicle</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="passengers" class="block text-sm font-medium text-gray-700 mb-1">Number of Passengers</label>
+                        <input type="number" id="passengers" name="passengers" value="1" min="1" max="8" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                        Calculate Trip & Emissions
+                    </button>
+                </form>
+            </div>
+
+            <!-- Results Panel -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Trip Summary</h2>
+                
+                <!-- Initial State -->
+                <div id="initialState" class="text-center py-8">
+                    <div class="ride-animation text-4xl mb-4">🚗</div>
+                    <p class="text-gray-500">Fill out the form to see your trip details and carbon impact</p>
+                </div>
+                
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden text-center py-8">
+                    <div class="animate-spin text-4xl mb-4">⚡</div>
+                    <p class="text-gray-600">Calculating your trip emissions...</p>
+                </div>
+                
+                <!-- Results -->
+                <div id="results" class="hidden space-y-4">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h3 class="font-medium text-gray-900 mb-2">Trip Details</h3>
+                        <div class="text-sm text-gray-600 space-y-1">
+                            <div>Route: <span id="routeDisplay"></span></div>
+                            <div>Distance: <span id="distanceDisplay"></span> miles</div>
+                            <div>Vehicle: <span id="vehicleDisplay"></span></div>
+                            <div>Passengers: <span id="passengersDisplay"></span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h3 class="font-medium text-red-900 mb-2">Carbon Impact</h3>
+                        <div class="text-2xl font-bold text-red-600">
+                            <span id="emissionsAmount"></span> kg CO₂
+                        </div>
+                        <p class="text-sm text-red-700 mt-1">Estimated emissions for this trip</p>
+                    </div>
+                    
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 class="font-medium text-green-900 mb-2">Offset This Trip</h3>
+                        <div class="text-lg font-semibold text-green-700 mb-2">
+                            $<span id="offsetCost"></span>
+                        </div>
+                        <p class="text-sm text-green-600 mb-3">Make your trip carbon neutral</p>
+                        <button id="offsetButton" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                            Purchase Carbon Offset
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Success State -->
+                <div id="successState" class="hidden text-center py-8">
+                    <div class="text-4xl mb-4">🌱</div>
+                    <h3 class="text-lg font-semibold text-green-900 mb-2">Trip Offset Complete!</h3>
+                    <p class="text-green-700">Your ride is now carbon neutral. Thank you for helping fight climate change!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Integration Section -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">API Integration</h2>
+            
+            <!-- API Key Input -->
+            <div class="mb-6">
+                <label for="apiKey" class="block text-sm font-medium text-gray-700 mb-2">
+                    Your API Key (Required for testing)
+                </label>
+                <div class="flex gap-2">
+                    <input type="password" id="apiKey" placeholder="Enter your API key to test with real data" 
+                           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <button id="toggleApiKey" type="button" class="px-3 py-2 text-gray-500 hover:text-gray-700">
+                        👁️
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 mt-1">
+                    Get your API key from the <a href="/dashboard" class="text-blue-600 hover:underline">dashboard</a>
+                </p>
+            </div>
+            
+            <!-- Code Examples -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-2">Emissions Estimation</h3>
+                    <pre class="bg-gray-100 rounded p-3 text-sm overflow-x-auto"><code id="emissionsCode">// Calculate emissions for vehicle trip
+const response = await fetch('/external-api/emissions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: JSON.stringify({
+    category: 'transportation',
+    activity_data: {
+      amount: 25 // distance in miles
+    }
+  })
+});
+
+const data = await response.json();
+console.log(`Emissions: ${data.estimated_emissions_kg} kg CO₂`);</code></pre>
+                </div>
+                
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-2">Offset Purchase</h3>
+                    <pre class="bg-gray-100 rounded p-3 text-sm overflow-x-auto"><code id="offsetCode">// Purchase carbon offset
+const response = await fetch('/external-api/offset', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: JSON.stringify({
+    emissions_kg: 5.2,
+    user_email: 'customer@example.com',
+    external_reference_id: 'trip_12345'
+  })
+});
+
+const result = await response.json();
+console.log(`Offset purchased: ${result.certificate_id}`);</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Navigation -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-blue-900 mb-4">Try Other Demos</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="flight.html" class="bg-white p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
+                    <div class="text-2xl mb-2">✈️</div>
+                    <h3 class="font-medium text-blue-900">Flight Offsetting</h3>
+                    <p class="text-sm text-blue-700">Calculate and offset flight emissions</p>
+                </a>
+                <a href="ecommerce.html" class="bg-white p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
+                    <div class="text-2xl mb-2">📦</div>
+                    <h3 class="font-medium text-blue-900">E-commerce Shipping</h3>
+                    <p class="text-sm text-blue-700">Offset shipping emissions at checkout</p>
+                </a>
+                <div class="bg-green-100 p-4 rounded-lg border border-green-300">
+                    <div class="text-2xl mb-2">🚗</div>
+                    <h3 class="font-medium text-green-900">Ride Offsetting</h3>
+                    <p class="text-sm text-green-700">Currently viewing</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+        let currentEmissionsData = null;
+
+        // DOM Elements
+        const rideForm = document.getElementById('rideForm');
+        const apiKeyInput = document.getElementById('apiKey');
+        const toggleApiKeyBtn = document.getElementById('toggleApiKey');
+        const initialState = document.getElementById('initialState');
+        const loadingState = document.getElementById('loadingState');
+        const results = document.getElementById('results');
+        const successState = document.getElementById('successState');
+        const offsetButton = document.getElementById('offsetButton');
+
+        // API Key Toggle
+        toggleApiKeyBtn.addEventListener('click', () => {
+            const input = apiKeyInput;
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggleApiKeyBtn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggleApiKeyBtn.textContent = '👁️';
+            }
+        });
+
+        // Vehicle type mapping for emissions calculation
+        const vehicleMap = {
+            'standard': 'standard_car',
+            'suv': 'suv',
+            'luxury': 'luxury_car',
+            'electric': 'electric_vehicle',
+            'hybrid': 'hybrid_vehicle'
+        };
+
+        // Vehicle display names
+        const vehicleDisplayMap = {
+            'standard': 'Standard Car',
+            'suv': 'SUV',
+            'luxury': 'Luxury Car',
+            'electric': 'Electric Vehicle',
+            'hybrid': 'Hybrid Vehicle'
+        };
+
+        // Form submission
+        rideForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey) {
+                alert('Please enter your API key to test the integration');
+                return;
+            }
+
+            const formData = new FormData(rideForm);
+            const pickup = formData.get('pickup');
+            const destination = formData.get('destination');
+            const distance = parseFloat(formData.get('distance'));
+            const vehicleType = formData.get('vehicleType');
+            const passengers = parseInt(formData.get('passengers'));
+
+            // Show loading state
+            showState('loading');
+
+            try {
+                // Calculate emissions
+                const emissionsResponse = await fetch(`${API_BASE_URL}/external-api/emissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        category: 'transportation',
+                        activity_data: {
+                            amount: distance // distance in miles as the amount
+                        },
+                        external_reference_id: `ride_${Date.now()}`
+                    })
+                });
+
+                if (!emissionsResponse.ok) {
+                    const errorData = await emissionsResponse.json();
+                    throw new Error(errorData.detail || 'Failed to calculate emissions');
+                }
+
+                const emissionsData = await emissionsResponse.json();
+                currentEmissionsData = emissionsData;
+
+                // Display results
+                displayResults({
+                    pickup,
+                    destination,
+                    distance,
+                    vehicleType,
+                    passengers,
+                    emissions: emissionsData.estimated_emissions_kg,
+                    cost: emissionsData.estimated_emissions_kg * 25 // $25 per ton
+                });
+
+                showState('results');
+
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+                showState('initial');
+            }
+        });
+
+        // Offset button click
+        offsetButton.addEventListener('click', async () => {
+            const apiKey = apiKeyInput.value.trim();
+            if (!apiKey || !currentEmissionsData) {
+                alert('Please calculate emissions first');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/external-api/offset`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify({
+                        emissions_kg: currentEmissionsData.estimated_emissions_kg,
+                        user_email: 'demo@example.com',
+                        external_reference_id: `ride_${Date.now()}`
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to purchase offset');
+                }
+
+                const offsetData = await response.json();
+                showState('success');
+
+            } catch (error) {
+                alert(`Error purchasing offset: ${error.message}`);
+            }
+        });
+
+        function showState(state) {
+            // Hide all states
+            initialState.style.display = 'none';
+            loadingState.style.display = 'none';
+            results.style.display = 'none';
+            successState.style.display = 'none';
+
+            // Show selected state
+            switch (state) {
+                case 'initial':
+                    initialState.style.display = 'block';
+                    break;
+                case 'loading':
+                    loadingState.style.display = 'block';
+                    break;
+                case 'results':
+                    results.style.display = 'block';
+                    break;
+                case 'success':
+                    successState.style.display = 'block';
+                    break;
+            }
+        }
+
+        function displayResults(data) {
+            document.getElementById('routeDisplay').textContent = `${data.pickup} → ${data.destination}`;
+            document.getElementById('distanceDisplay').textContent = data.distance;
+            document.getElementById('vehicleDisplay').textContent = vehicleDisplayMap[data.vehicleType];
+            document.getElementById('passengersDisplay').textContent = data.passengers;
+            document.getElementById('emissionsAmount').textContent = data.emissions.toFixed(2);
+            document.getElementById('offsetCost').textContent = (data.cost / 1000).toFixed(2); // Convert to dollars
+        }
+
+        // Update code examples with current form data
+        function updateCodeExamples() {
+            const distance = document.getElementById('distance').value;
+            const vehicleType = document.getElementById('vehicleType').value;
+            
+            const emissionsCode = `// Calculate emissions for vehicle trip
+const response = await fetch('/external-api/emissions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: JSON.stringify({
+    category: 'transportation',
+    activity_data: {
+      amount: ${distance} // distance in miles
+    }
+  })
+});
+
+const data = await response.json();
+console.log(\`Emissions: \${data.estimated_emissions_kg} kg CO₂\`);`;
+
+            document.getElementById('emissionsCode').textContent = emissionsCode;
+        }
+
+        // Update code examples when form changes
+        document.getElementById('distance').addEventListener('input', updateCodeExamples);
+        document.getElementById('vehicleType').addEventListener('change', updateCodeExamples);
+
+        // Initialize
+        updateCodeExamples();
+    </script>
+</body>
+</html>

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Carbon Offset Demo - Carbon Credit API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-4xl mx-auto py-6 px-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Flight Carbon Offset Demo</h1>
+                    <p class="text-gray-600 mt-2">Experience our API with a live flight booking example</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="/api-docs.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        API Docs
+                    </a>
+                    <a href="/dashboard" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <!-- Demo Description -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <h2 class="text-lg font-semibold text-blue-900 mb-2">Demo Overview</h2>
+            <p class="text-blue-800">
+                This demo simulates a flight booking website that uses our Carbon Credit API to calculate 
+                emissions and offer carbon offsetting. Enter flight details below to see how easy it is 
+                to integrate carbon offsetting into your application.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Flight Booking Form -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Book Your Flight</h2>
+                
+                <form id="flightForm" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
+                            <input 
+                                type="text" 
+                                id="origin" 
+                                placeholder="DEL" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+                            <input 
+                                type="text" 
+                                id="destination" 
+                                placeholder="LHR" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Passengers</label>
+                            <select 
+                                id="passengers" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="1">1 Passenger</option>
+                                <option value="2" selected>2 Passengers</option>
+                                <option value="3">3 Passengers</option>
+                                <option value="4">4 Passengers</option>
+                                <option value="5">5+ Passengers</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                            <select 
+                                id="flightClass" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="economy" selected>Economy</option>
+                                <option value="business">Business</option>
+                                <option value="first">First Class</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-4">
+                        <button 
+                            type="submit" 
+                            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        >
+                            Calculate Flight Emissions
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden text-center py-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Calculating emissions...</p>
+                </div>
+
+                <!-- Emissions Result -->
+                <div id="emissionsResult" class="hidden mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <h3 class="font-semibold text-yellow-900 mb-2">✈️ Flight Emissions Calculated</h3>
+                    <div class="space-y-2 text-sm text-yellow-800">
+                        <p><strong>CO₂ Emissions:</strong> <span id="emissionsAmount"></span> kg</p>
+                        <p><strong>Offset Cost:</strong> $<span id="offsetCost"></span></p>
+                    </div>
+                </div>
+
+                <!-- Carbon Offset Option -->
+                <div id="offsetOption" class="hidden mt-4">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-semibold text-green-900">🌱 Make Your Flight Carbon Neutral</h4>
+                                <p class="text-sm text-green-800 mt-1">
+                                    Offset your flight's carbon footprint by supporting verified carbon reduction projects.
+                                </p>
+                            </div>
+                            <label class="flex items-center">
+                                <input 
+                                    type="checkbox" 
+                                    id="offsetCheckbox" 
+                                    class="h-5 w-5 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                />
+                                <span class="ml-2 text-sm font-medium text-green-900">Add Carbon Offset</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Checkout -->
+                <div id="checkoutSection" class="hidden mt-6">
+                    <div class="border-t pt-4">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email for Certificate</label>
+                            <input 
+                                type="email" 
+                                id="userEmail" 
+                                placeholder="your@email.com" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                required
+                            />
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                            <h4 class="font-semibold text-gray-900 mb-2">Order Summary</h4>
+                            <div class="space-y-1 text-sm">
+                                <div class="flex justify-between">
+                                    <span>Flight booking</span>
+                                    <span>$450.00</span>
+                                </div>
+                                <div class="flex justify-between" id="offsetLine">
+                                    <span>Carbon offset</span>
+                                    <span>$<span id="offsetLineAmount"></span></span>
+                                </div>
+                                <div class="border-t pt-2 flex justify-between font-semibold">
+                                    <span>Total</span>
+                                    <span id="totalAmount">$450.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            id="purchaseButton"
+                            class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                        >
+                            Complete Purchase
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Code Example -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Live API Calls</h2>
+                <p class="text-gray-600 mb-4">
+                    Watch the actual API requests and responses as you interact with the demo.
+                </p>
+
+                <!-- API Request/Response Display -->
+                <div id="apiCalls" class="space-y-4">
+                    <div class="text-center text-gray-500 py-8">
+                        <p>API calls will appear here as you use the demo</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-8 max-w-md mx-4">
+                <div class="text-center">
+                    <div class="mb-4">
+                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                            <span class="text-2xl">✅</span>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">Flight Booked Successfully!</h3>
+                    <p class="text-gray-600 mb-4">
+                        Your flight is carbon neutral! A certificate has been sent to your email.
+                    </p>
+                    <div class="bg-green-50 rounded-lg p-4 mb-4">
+                        <p class="text-sm text-green-800">
+                            <strong>Certificate ID:</strong> <span id="certificateId"></span>
+                        </p>
+                    </div>
+                    <button 
+                        onclick="closeSuccessModal()"
+                        class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                        Book Another Flight
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Integration Section -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">API Integration</h2>
+            
+            <!-- API Key Input -->
+            <div class="mb-6">
+                <label for="apiKey" class="block text-sm font-medium text-gray-700 mb-2">
+                    Your API Key (Required for testing)
+                </label>
+                <div class="flex gap-2">
+                    <input type="password" id="apiKey" placeholder="Enter your API key to test with real data" 
+                           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <button id="toggleApiKey" type="button" class="px-3 py-2 text-gray-500 hover:text-gray-700">
+                        👁️
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 mt-1">
+                    Get your API key from the <a href="/dashboard" class="text-blue-600 hover:underline">dashboard</a>
+                </p>
+            </div>
+            
+            <!-- Code Examples -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-2">Emissions Estimation</h3>
+                    <pre class="bg-gray-100 rounded p-3 text-sm overflow-x-auto"><code id="emissionsCode">// Calculate emissions for flight
+const response = await fetch('/external-api/emissions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: JSON.stringify({
+    category: 'flight',
+    activity_data: {
+      origin: 'DEL',
+      destination: 'LHR',
+      passenger_count: 2
+    }
+  })
+});
+
+const data = await response.json();
+console.log(`Emissions: ${data.estimated_emissions_kg} kg CO₂`);</code></pre>
+                </div>
+                
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-2">Offset Purchase</h3>
+                    <pre class="bg-gray-100 rounded p-3 text-sm overflow-x-auto"><code id="offsetCode">// Purchase carbon offset
+const response = await fetch('/external-api/offset', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: JSON.stringify({
+    emissions_kg: 1240.5,
+    user_email: 'customer@example.com',
+    external_reference_id: 'flight_12345'
+  })
+});
+
+const result = await response.json();
+console.log(`Offset purchased: ${result.certificate_id}`);</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Navigation -->
+        <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h2 class="text-lg font-semibold text-blue-900 mb-4">Try Other Demos</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-100 p-4 rounded-lg border border-blue-300">
+                    <div class="text-2xl mb-2">✈️</div>
+                    <h3 class="font-medium text-blue-900">Flight Offsetting</h3>
+                    <p class="text-sm text-blue-700">Currently viewing</p>
+                </div>
+                <a href="ecommerce.html" class="bg-white p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
+                    <div class="text-2xl mb-2">📦</div>
+                    <h3 class="font-medium text-blue-900">E-commerce Shipping</h3>
+                    <p class="text-sm text-blue-700">Offset shipping emissions at checkout</p>
+                </a>
+                <a href="ride.html" class="bg-white p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
+                    <div class="text-2xl mb-2">🚗</div>
+                    <h3 class="font-medium text-blue-900">Ride Offsetting</h3>
+                    <p class="text-sm text-blue-700">Calculate and offset transportation emissions</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+        let currentEmissions = 0;
+
+        // API Key Toggle
+        const toggleApiKeyBtn = document.getElementById('toggleApiKey');
+        const apiKeyInput = document.getElementById('apiKey');
+        
+        if (toggleApiKeyBtn && apiKeyInput) {
+            toggleApiKeyBtn.addEventListener('click', () => {
+                if (apiKeyInput.type === 'password') {
+                    apiKeyInput.type = 'text';
+                    toggleApiKeyBtn.textContent = '🙈';
+                } else {
+                    apiKeyInput.type = 'password';
+                    toggleApiKeyBtn.textContent = '👁️';
+                }
+            });
+        }
+        let currentOffsetCost = 0;
+
+        // Form submission
+        document.getElementById('flightForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await calculateEmissions();
+        });
+
+        // Offset checkbox
+        document.getElementById('offsetCheckbox').addEventListener('change', updateCheckout);
+
+        // Purchase button
+        document.getElementById('purchaseButton').addEventListener('click', purchaseOffset);
+
+        async function calculateEmissions() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                alert('Please enter your API key to test the integration');
+                return;
+            }
+
+            const origin = document.getElementById('origin').value;
+            const destination = document.getElementById('destination').value;
+            const passengers = parseInt(document.getElementById('passengers').value);
+            const flightClass = document.getElementById('flightClass').value;
+
+            // Show loading
+            showElement('loadingState');
+            hideElement('emissionsResult');
+            hideElement('offsetOption');
+            hideElement('checkoutSection');
+
+            const requestData = {
+                category: 'flight',
+                activity_data: {
+                    origin: origin.toUpperCase(),
+                    destination: destination.toUpperCase(),
+                    passenger_count: passengers
+                },
+                external_reference_id: `flight_${Date.now()}`
+            };
+
+            // Display API request
+            displayAPICall('POST /external-api/emissions', requestData);
+
+            try {
+                // Make real API call
+                const response = await fetch(`${API_BASE_URL}/external-api/emissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': apiKey
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to calculate emissions');
+                }
+
+                const responseData = await response.json();
+
+                // Display API response
+                displayAPIResponse(responseData);
+
+                currentEmissions = responseData.estimated_emissions_kg;
+                currentOffsetCost = responseData.estimated_offset_cost_usd;
+
+                // Show results
+                hideElement('loadingState');
+                document.getElementById('emissionsAmount').textContent = currentEmissions;
+                document.getElementById('offsetCost').textContent = currentOffsetCost;
+                showElement('emissionsResult');
+                showElement('offsetOption');
+                showElement('checkoutSection');
+
+            } catch (error) {
+                hideElement('loadingState');
+                alert('Error calculating emissions. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+
+        function updateCheckout() {
+            const offsetChecked = document.getElementById('offsetCheckbox').checked;
+            const offsetLine = document.getElementById('offsetLine');
+            const offsetLineAmount = document.getElementById('offsetLineAmount');
+            const totalAmount = document.getElementById('totalAmount');
+
+            if (offsetChecked) {
+                offsetLine.style.display = 'flex';
+                offsetLineAmount.textContent = currentOffsetCost.toFixed(2);
+                totalAmount.textContent = `$${(450 + currentOffsetCost).toFixed(2)}`;
+            } else {
+                offsetLine.style.display = 'none';
+                totalAmount.textContent = '$450.00';
+            }
+        }
+
+        async function purchaseOffset() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                alert('Please enter your API key to test the integration');
+                return;
+            }
+
+            const offsetChecked = document.getElementById('offsetCheckbox').checked;
+            const userEmail = document.getElementById('userEmail').value;
+
+            if (offsetChecked && (!userEmail || !userEmail.includes('@'))) {
+                alert('Please enter a valid email address for the certificate.');
+                return;
+            }
+
+            if (offsetChecked) {
+                const requestData = {
+                    external_reference_id: `flight_${Date.now()}`,
+                    emissions_kg: currentEmissions,
+                    user_email: userEmail
+                };
+
+                // Display API request
+                displayAPICall('POST /external-api/offset', requestData);
+
+                try {
+                    // Make real API call
+                    const response = await fetch(`${API_BASE_URL}/external-api/offset`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': apiKey
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Failed to purchase offset');
+                    }
+
+                    const responseData = await response.json();
+
+                    // Display API response
+                    displayAPIResponse(responseData);
+
+                    // Show success modal
+                    document.getElementById('certificateId').textContent = responseData.certificate_id;
+                    showElement('successModal');
+
+                } catch (error) {
+                    alert(`Error purchasing offset: ${error.message}`);
+                }
+            } else {
+                // Just show success without offset
+                alert('Flight booked successfully! (No carbon offset selected)');
+                resetForm();
+            }
+        }
+
+        function displayAPICall(endpoint, data) {
+            const apiCalls = document.getElementById('apiCalls');
+            if (apiCalls.children[0].textContent.includes('API calls will appear')) {
+                apiCalls.innerHTML = '';
+            }
+
+            const callDiv = document.createElement('div');
+            callDiv.className = 'border rounded-lg p-4';
+            callDiv.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">REQUEST</span>
+                    <code class="text-sm font-mono">${endpoint}</code>
+                </div>
+                <pre class="text-xs bg-gray-50 p-2 rounded overflow-x-auto"><code>${JSON.stringify(data, null, 2)}</code></pre>
+            `;
+            apiCalls.appendChild(callDiv);
+        }
+
+        function displayAPIResponse(data) {
+            const apiCalls = document.getElementById('apiCalls');
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'border rounded-lg p-4';
+            responseDiv.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">RESPONSE</span>
+                    <span class="text-xs text-gray-600">200 OK</span>
+                </div>
+                <pre class="text-xs bg-gray-50 p-2 rounded overflow-x-auto"><code>${JSON.stringify(data, null, 2)}</code></pre>
+            `;
+            apiCalls.appendChild(responseDiv);
+        }
+
+        function showElement(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function hideElement(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        // Update code examples with current form data
+        function updateCodeExamples() {
+            const origin = document.getElementById('origin').value;
+            const destination = document.getElementById('destination').value;
+            const passengers = document.getElementById('passengers').value;
+            const flightClass = document.getElementById('flightClass').value;
+            
+            const emissionsCode = `// Calculate emissions for flight
+const response = await fetch('/external-api/emissions', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Key': 'your-api-key'
+  },
+  body: JSON.stringify({
+    category: 'flight',
+    activity_data: {
+      origin: '${origin.toUpperCase()}',
+      destination: '${destination.toUpperCase()}',
+      passenger_count: ${passengers}
+    }
+  })
+});
+
+const data = await response.json();
+console.log(\`Emissions: \${data.estimated_emissions_kg} kg CO₂\`);`;
+
+            document.getElementById('emissionsCode').textContent = emissionsCode;
+        }
+
+        // Update code examples when form changes
+        document.getElementById('origin').addEventListener('input', updateCodeExamples);
+        document.getElementById('destination').addEventListener('input', updateCodeExamples);
+        document.getElementById('passengers').addEventListener('change', updateCodeExamples);
+        document.getElementById('flightClass').addEventListener('change', updateCodeExamples);
+
+        // Initialize code examples
+        updateCodeExamples();
+
+        function closeSuccessModal() {
+            hideElement('successModal');
+            resetForm();
+        }
+
+        function resetForm() {
+            document.getElementById('flightForm').reset();
+            hideElement('emissionsResult');
+            hideElement('offsetOption');
+            hideElement('checkoutSection');
+            document.getElementById('offsetCheckbox').checked = false;
+            document.getElementById('userEmail').value = '';
+        }
+
+        // Initialize with default values
+        document.getElementById('origin').value = 'DEL';
+        document.getElementById('destination').value = 'LHR';
+    </script>
+</body>
+</html>

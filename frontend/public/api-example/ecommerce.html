@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-commerce Carbon Offset Demo - Carbon Credit API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow">
+        <div class="max-w-6xl mx-auto py-6 px-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">EcoShop - Carbon Neutral Shopping</h1>
+                    <p class="text-gray-600 mt-2">Shop sustainably with automatic carbon offsetting</p>
+                </div>
+                <div class="flex gap-3">
+                    <a href="/api-docs.html" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        API Docs
+                    </a>
+                    <a href="/dashboard" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto py-8 px-4">
+        <!-- Demo Description -->
+        <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+            <h2 class="text-lg font-semibold text-green-900 mb-2">Demo Overview</h2>
+            <p class="text-green-800">
+                This demo shows how e-commerce platforms can integrate carbon offsetting into their checkout process.
+                Add items to your cart and see how shipping emissions are automatically calculated and offset.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Product Grid -->
+            <div class="lg:col-span-2">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Our Products</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="productGrid">
+                    <!-- Products will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Shopping Cart & Checkout -->
+            <div class="bg-white rounded-lg shadow p-6 h-fit">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Shopping Cart</h2>
+                
+                <div id="cartItems" class="space-y-3 mb-4">
+                    <div class="text-gray-500 text-center py-8">
+                        Your cart is empty
+                    </div>
+                </div>
+                
+                <div class="border-t pt-4">
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">$0.00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Shipping:</span>
+                            <span id="shippingCost">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-orange-600">
+                            <span>Carbon Offset:</span>
+                            <span id="carbonOffset">$0.00</span>
+                        </div>
+                        <div class="flex justify-between font-semibold text-lg border-t pt-2">
+                            <span>Total:</span>
+                            <span id="totalCost">$0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="offsetCheckbox" checked class="rounded">
+                            <span class="text-sm">Make this order carbon neutral</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1">
+                            We'll offset the shipping emissions for your order
+                        </p>
+                    </div>
+                    
+                    <button 
+                        id="checkoutButton" 
+                        class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Calls Display -->
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">API Calls</h2>
+            <div id="apiCalls" class="space-y-4">
+                <div class="text-gray-500 text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    API calls will appear here as you interact with the demo
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md mx-4">
+            <div class="text-center">
+                <div class="text-6xl mb-4">🌱</div>
+                <h2 class="text-2xl font-bold text-green-600 mb-2">Order Complete!</h2>
+                <p class="text-gray-600 mb-4">
+                    Your order has been placed and the shipping emissions have been offset.
+                </p>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-green-800">
+                        <strong>Certificate ID:</strong> <span id="certificateId" class="font-mono"></span>
+                    </p>
+                    <p class="text-sm text-green-800 mt-1">
+                        A detailed report has been sent to your email.
+                    </p>
+                </div>
+                <button onclick="hideElement('successModal'); resetCart();" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                    Continue Shopping
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'http://localhost:8000';
+        let API_KEY = prompt('Please enter your API key from the dashboard:') || 'demo-key-placeholder';
+
+        // Sample products
+        const products = [
+            { id: 1, name: 'Organic Cotton T-Shirt', price: 29.99, weight: 0.2, image: '👕' },
+            { id: 2, name: 'Bamboo Phone Case', price: 24.99, weight: 0.1, image: '📱' },
+            { id: 3, name: 'Recycled Notebook', price: 12.99, weight: 0.3, image: '📓' },
+            { id: 4, name: 'Solar Power Bank', price: 49.99, weight: 0.5, image: '🔋' },
+            { id: 5, name: 'Reusable Water Bottle', price: 19.99, weight: 0.4, image: '🍶' },
+            { id: 6, name: 'Hemp Backpack', price: 79.99, weight: 0.8, image: '🎒' }
+        ];
+
+        let cart = [];
+        let currentEmissions = 0;
+        let currentOffsetCost = 0;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            updateCart();
+        });
+
+        // Offset checkbox
+        document.getElementById('offsetCheckbox').addEventListener('change', updateCart);
+
+        // Checkout button
+        document.getElementById('checkoutButton').addEventListener('click', checkout);
+
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = products.map(product => `
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="text-6xl text-center mb-4">${product.image}</div>
+                    <h3 class="font-semibold text-gray-900 mb-2">${product.name}</h3>
+                    <p class="text-gray-600 text-sm mb-3">Weight: ${product.weight}kg</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xl font-bold text-green-600">$${product.price}</span>
+                        <button 
+                            onclick="addToCart(${product.id})"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existingItem = cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            
+            updateCart();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCart();
+        }
+
+        function updateQuantity(productId, newQuantity) {
+            if (newQuantity <= 0) {
+                removeFromCart(productId);
+                return;
+            }
+            
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity = newQuantity;
+                updateCart();
+            }
+        }
+
+        async function updateCart() {
+            const cartItemsDiv = document.getElementById('cartItems');
+            const subtotalSpan = document.getElementById('subtotal');
+            const shippingSpan = document.getElementById('shippingCost');
+            const carbonOffsetSpan = document.getElementById('carbonOffset');
+            const totalSpan = document.getElementById('totalCost');
+            const checkoutButton = document.getElementById('checkoutButton');
+            
+            if (cart.length === 0) {
+                cartItemsDiv.innerHTML = '<div class="text-gray-500 text-center py-8">Your cart is empty</div>';
+                subtotalSpan.textContent = '$0.00';
+                shippingSpan.textContent = '$0.00';
+                carbonOffsetSpan.textContent = '$0.00';
+                totalSpan.textContent = '$0.00';
+                checkoutButton.disabled = true;
+                return;
+            }
+
+            // Render cart items
+            cartItemsDiv.innerHTML = cart.map(item => `
+                <div class="flex items-center justify-between border-b pb-2">
+                    <div class="flex-1">
+                        <div class="font-medium text-sm">${item.name}</div>
+                        <div class="text-xs text-gray-500">$${item.price} × ${item.quantity}</div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button 
+                            onclick="updateQuantity(${item.id}, ${item.quantity - 1})"
+                            class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300"
+                        >-</button>
+                        <span class="text-sm w-8 text-center">${item.quantity}</span>
+                        <button 
+                            onclick="updateQuantity(${item.id}, ${item.quantity + 1})"
+                            class="w-6 h-6 bg-gray-200 rounded text-xs hover:bg-gray-300"
+                        >+</button>
+                        <button 
+                            onclick="removeFromCart(${item.id})"
+                            class="w-6 h-6 bg-red-200 text-red-600 rounded text-xs hover:bg-red-300"
+                        >×</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Calculate totals
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const totalWeight = cart.reduce((sum, item) => sum + (item.weight * item.quantity), 0);
+            const shippingCost = calculateShippingCost(totalWeight);
+            
+            // Calculate emissions for shipping
+            await calculateShippingEmissions(totalWeight);
+            
+            const offsetChecked = document.getElementById('offsetCheckbox').checked;
+            const offsetCost = offsetChecked ? currentOffsetCost : 0;
+            const total = subtotal + shippingCost + offsetCost;
+
+            subtotalSpan.textContent = `$${subtotal.toFixed(2)}`;
+            shippingSpan.textContent = `$${shippingCost.toFixed(2)}`;
+            carbonOffsetSpan.textContent = offsetChecked ? `$${offsetCost.toFixed(2)}` : '$0.00';
+            totalSpan.textContent = `$${total.toFixed(2)}`;
+            checkoutButton.disabled = false;
+        }
+
+        function calculateShippingCost(weight) {
+            // Simple shipping calculation: $5 base + $2 per kg
+            return 5 + (weight * 2);
+        }
+
+        async function calculateShippingEmissions(totalWeight) {
+            if (totalWeight === 0) {
+                currentEmissions = 0;
+                currentOffsetCost = 0;
+                return;
+            }
+
+            const requestData = {
+                category: 'shipping',
+                activity_data: {
+                    weight_kg: totalWeight,
+                    distance_km: 500, // Assume 500km average shipping distance
+                    transport_method: 'truck'
+                },
+                external_reference_id: `ecommerce_${Date.now()}`
+            };
+
+            try {
+                // Make real API call
+                const response = await fetch(`${API_BASE_URL}/external-api/emissions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': API_KEY
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    console.error('API call failed:', response.status);
+                    // Fallback to simple calculation
+                    currentEmissions = totalWeight * 0.5; // 0.5kg CO2 per kg shipped
+                    currentOffsetCost = (currentEmissions / 1000) * 15;
+                    return;
+                }
+
+                const responseData = await response.json();
+                currentEmissions = responseData.estimated_emissions_kg;
+                currentOffsetCost = responseData.estimated_offset_cost_usd;
+
+            } catch (error) {
+                console.error('Error calculating emissions:', error);
+                // Fallback calculation
+                currentEmissions = totalWeight * 0.5;
+                currentOffsetCost = (currentEmissions / 1000) * 15;
+            }
+        }
+
+        async function checkout() {
+            const offsetChecked = document.getElementById('offsetCheckbox').checked;
+            const userEmail = prompt('Enter your email for the receipt:');
+            
+            if (!userEmail) return;
+
+            if (offsetChecked && currentEmissions > 0) {
+                const requestData = {
+                    external_reference_id: `ecommerce_${Date.now()}`,
+                    emissions_kg: currentEmissions,
+                    user_email: userEmail
+                };
+
+                // Display API request
+                displayAPICall('POST /external-api/offset', requestData);
+
+                try {
+                    // Make real API call
+                    const response = await fetch(`${API_BASE_URL}/external-api/offset`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-API-Key': API_KEY
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            alert('Invalid API key. Please refresh the page and enter a valid API key.');
+                            return;
+                        }
+                        throw new Error(`API call failed: ${response.status}`);
+                    }
+
+                    const responseData = await response.json();
+
+                    // Display API response
+                    displayAPIResponse(responseData);
+
+                    // Show success modal
+                    document.getElementById('certificateId').textContent = responseData.certificate_id;
+                    showElement('successModal');
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error processing carbon offset. Order placed without offset.');
+                }
+            } else {
+                // Just show success without offset
+                alert('Order placed successfully! (No carbon offset selected)');
+                resetCart();
+            }
+        }
+
+        function resetCart() {
+            cart = [];
+            currentEmissions = 0;
+            currentOffsetCost = 0;
+            updateCart();
+        }
+
+        function displayAPICall(endpoint, data) {
+            const apiCalls = document.getElementById('apiCalls');
+            if (apiCalls.children[0].textContent.includes('API calls will appear')) {
+                apiCalls.innerHTML = '';
+            }
+
+            const callDiv = document.createElement('div');
+            callDiv.className = 'border rounded-lg p-4';
+            callDiv.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">REQUEST</span>
+                    <code class="text-sm font-mono">${endpoint}</code>
+                </div>
+                <pre class="text-xs bg-gray-50 p-2 rounded overflow-x-auto"><code>${JSON.stringify(data, null, 2)}</code></pre>
+            `;
+            apiCalls.appendChild(callDiv);
+        }
+
+        function displayAPIResponse(data) {
+            const apiCalls = document.getElementById('apiCalls');
+            const responseDiv = document.createElement('div');
+            responseDiv.className = 'border rounded-lg p-4';
+            responseDiv.innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">RESPONSE</span>
+                    <span class="text-xs text-gray-600">200 OK</span>
+                </div>
+                <pre class="text-xs bg-gray-50 p-2 rounded overflow-x-auto"><code>${JSON.stringify(data, null, 2)}</code></pre>
+            `;
+            apiCalls.appendChild(responseDiv);
+        }
+
+        function showElement(id) {
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function hideElement(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+    </script>
+
+    <!-- Demo Navigation -->
+    <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h2 class="text-lg font-semibold text-blue-900 mb-4">Try Other Demos</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="flight.html" class="bg-white p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
+                <div class="text-2xl mb-2">✈️</div>
+                <h3 class="font-medium text-blue-900">Flight Offsetting</h3>
+                <p class="text-sm text-blue-700">Calculate and offset flight emissions</p>
+            </a>
+            <div class="bg-green-100 p-4 rounded-lg border border-green-300">
+                <div class="text-2xl mb-2">📦</div>
+                <h3 class="font-medium text-green-900">E-commerce Shipping</h3>
+                <p class="text-sm text-green-700">Currently viewing</p>
+            </div>
+            <a href="ride.html" class="bg-white p-4 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors">
+                <div class="text-2xl mb-2">🚗</div>
+                <h3 class="font-medium text-blue-900">Ride Offsetting</h3>
+                <p class="text-sm text-blue-700">Calculate and offset transportation emissions</p>
+            </a>
+        </div>
+    </div>
+    </div>
+
+</body>
+</html>

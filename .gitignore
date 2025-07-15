@@ -1,0 +1,15 @@
+my-ec2.pem
+instructions.md
+.cursor
+.github
+.vscode
+frontend/node_modules
+backend/__pycache__
+backend/.pytest_cache
+backend/venv
+backend/.env
+frontend/.env
+frontend/dist
+frontend/package-lock.json
+frontend/.gitignore
+frontend/README.md
