@@ -29,9 +29,6 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
     
-    # AI Services
-    GEMINI_API_KEY: str = ""
-    
     # Carbon Emissions APIs
     CARBON_INTERFACE_API_KEY: str = ""
     COIN_GECKO_API_KEY: str = ""

@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
+from pathlib import Path
 from app.core.config import settings
-from app.api.v1 import auth, emissions, marketplace, ai_recommendations, reports, dashboard, documents, carbon_estimates, offsets, external_api, api_management, seller, blockchain
+from app.api.v1 import auth, emissions, marketplace, ai_recommendations, reports, dashboard, carbon_estimates, offsets, external_api, api_management, seller, blockchain
 from app.db.database import db
 import logging
 
@@ -26,14 +30,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
+# Mount static files from frontend build
+FRONTEND_DIST_PATH = Path(__file__).parent.parent / "frontend" / "dist"
+
+# Include routers first (before catch-all route)
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(emissions.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(marketplace.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(ai_recommendations.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(reports.router, prefix=f"{settings.API_V1_STR}")
-app.include_router(documents.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(carbon_estimates.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(offsets.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(seller.router, prefix=f"{settings.API_V1_STR}")
@@ -42,6 +48,61 @@ app.include_router(blockchain.router, prefix=f"{settings.API_V1_STR}")
 # API-as-a-Service routers
 app.include_router(external_api.router, prefix="/external-api", tags=["External API"])
 app.include_router(api_management.router, prefix=f"{settings.API_V1_STR}", tags=["API Management"])
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "version": settings.VERSION,
+        "environment": settings.ENVIRONMENT
+    }
+
+# Static file serving (after all API routes)
+if FRONTEND_DIST_PATH.exists():
+    app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST_PATH / "assets")), name="assets")
+    
+    # Serve specific frontend routes
+    @app.get("/dashboard{path:path}", response_class=FileResponse)
+    async def serve_dashboard(path: str = ""):
+        """Serve dashboard pages"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
+    
+    @app.get("/emissions{path:path}", response_class=FileResponse)
+    async def serve_emissions(path: str = ""):
+        """Serve emissions pages"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
+    
+    @app.get("/marketplace{path:path}", response_class=FileResponse)
+    async def serve_marketplace(path: str = ""):
+        """Serve marketplace pages"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
+    
+    @app.get("/reports{path:path}", response_class=FileResponse)
+    async def serve_reports(path: str = ""):
+        """Serve reports pages"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
+    
+    @app.get("/offsets{path:path}", response_class=FileResponse)
+    async def serve_offsets(path: str = ""):
+        """Serve offsets pages"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
+    
+    @app.get("/seller{path:path}", response_class=FileResponse)
+    async def serve_seller(path: str = ""):
+        """Serve seller pages"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
+    
+    @app.get("/auth{path:path}", response_class=FileResponse)
+    async def serve_auth(path: str = ""):
+        """Serve auth pages"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
+    
+    # Serve the main index.html for root and other routes
+    @app.get("/", response_class=FileResponse)
+    async def serve_frontend_root():
+        """Serve the main frontend application"""
+        return FileResponse(str(FRONTEND_DIST_PATH / "index.html"))
 
 @app.on_event("startup")
 async def startup_event():
@@ -52,24 +113,6 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Failed to start application: {e}")
         raise
-
-@app.get("/")
-async def root():
-    """Root endpoint"""
-    return {
-        "message": "Carbon Credit Marketplace API",
-        "version": settings.VERSION,
-        "docs": "/docs"
-    }
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "version": settings.VERSION,
-        "environment": settings.ENVIRONMENT
-    }
 
 if __name__ == "__main__":
     import uvicorn

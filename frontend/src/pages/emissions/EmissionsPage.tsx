@@ -2,22 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Loading } from '../../components/ui/Loading';
-import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../hooks/useToast';
-import { Plus, Search, Trash2, Edit2, FileUp } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2 } from 'lucide-react';
 import apiClient from '../../lib/api';
-import DocumentUpload from '../../components/DocumentUpload';
 import type { EmissionActivity, EmissionCategory } from '../../types';
-
-interface ExtractedActivity {
-  activity_name: string;
-  category: string;
-  description: string;
-  amount: number;
-  unit: string;
-  emission_factor: number;
-  date: string;
-}
 
 export default function EmissionsPage() {
   const { addToast } = useToast();
@@ -25,7 +13,6 @@ export default function EmissionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [editingEmission, setEditingEmission] = useState<EmissionActivity | null>(null);
   const [formData, setFormData] = useState({
     activity_name: '',
@@ -211,78 +198,6 @@ export default function EmissionsPage() {
     setShowForm(false);
   };
 
-  const handleDocumentExtraction = async (extractedActivities: ExtractedActivity[]) => {
-    try {
-      setIsSubmitting(true);
-      console.log('Processing extracted activities:', extractedActivities);
-      
-      if (!extractedActivities || extractedActivities.length === 0) {
-        addToast('No activities were selected for import.', 'warning');
-        return;
-      }
-      
-      // Create all extracted activities
-      const promises = extractedActivities.map(async (activity, index) => {
-        try {
-          // Calculate emission factor if not provided
-          const emissionFactor = activity.emission_factor || getDefaultEmissionFactor(activity.category);
-          
-          const emissionData = {
-            activity_name: activity.activity_name,
-            category: activity.category as EmissionCategory,
-            description: activity.description,
-            amount: parseFloat(activity.amount.toString()),
-            unit: activity.unit,
-            emission_factor: emissionFactor,
-            date: activity.date
-          };
-          
-          console.log(`Creating emission ${index + 1}:`, emissionData);
-          const result = await apiClient.createEmission(emissionData);
-          console.log(`Created emission ${index + 1}:`, result);
-          return result;
-        } catch (err) {
-          console.error(`Failed to create emission ${index + 1}:`, err);
-          throw err;
-        }
-      });
-
-      const results = await Promise.all(promises);
-      console.log('All emissions created:', results);
-      
-      addToast(
-        `Successfully added ${extractedActivities.length} emission activities from document!`, 
-        'success'
-      );
-      
-      // Close the modal and refresh data
-      setShowDocumentUpload(false);
-      
-      // Refresh emissions data to include the newly uploaded ones
-      setTimeout(() => {
-        fetchEmissions();
-      }, 500);
-      
-    } catch (error) {
-      console.error('Error saving extracted emissions:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      addToast(`Failed to save emission activities: ${errorMessage}`, 'error');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const getDefaultEmissionFactor = (category: string): number => {
-    // Default emission factors (kg CO2e per unit)
-    const defaultFactors = {
-      transportation: 0.12, // per km
-      energy: 0.5, // per kWh
-      manufacturing: 2.0, // per unit
-      agriculture: 1.5, // per kg
-      waste: 0.8 // per kg
-    };
-    return defaultFactors[category as keyof typeof defaultFactors] || 1.0;
-  };
   const totalEmissions = emissions.reduce((sum, emission) => sum + emission.co2_equivalent, 0);
 
   const clearFilters = () => {
@@ -318,14 +233,6 @@ export default function EmissionsPage() {
           <p className="text-gray-600 mt-1">Track and monitor your carbon emissions</p>
         </div>
         <div className="flex gap-3">
-          <Button 
-            onClick={() => setShowDocumentUpload(true)} 
-            variant="outline" 
-            className="flex items-center gap-2"
-          >
-            <FileUp className="h-4 w-4" />
-            Extract from Document
-          </Button>
           <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Add Emission
@@ -630,19 +537,6 @@ export default function EmissionsPage() {
           </Card>
         </div>
       )}
-
-      {/* Document Upload Modal */}
-      <Modal
-        isOpen={showDocumentUpload}
-        onClose={() => setShowDocumentUpload(false)}
-        title="Extract Emissions from Document"
-        maxWidth="2xl"
-      >
-        <DocumentUpload
-          onExtractedData={handleDocumentExtraction}
-          onClose={() => setShowDocumentUpload(false)}
-        />
-      </Modal>
     </div>
   );
 }
