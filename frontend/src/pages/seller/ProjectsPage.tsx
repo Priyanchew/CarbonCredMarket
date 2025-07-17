@@ -54,7 +54,7 @@ export default function ProjectsPage() {
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const { addToast } = useToast();
   const navigate = useNavigate();
-  const { isVerified, requireVerification } = useVerification();
+  const { requireVerification } = useVerification();
 
   const handleCreateProject = () => {
     if (requireVerification('create projects')) {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, Mail, Phone, MapPin, Github, Twitter, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Github, Twitter, Linkedin } from 'lucide-react';
 
 const PublicFooter: React.FC = () => {
   return (
@@ -10,8 +10,8 @@ const PublicFooter: React.FC = () => {
           {/* Company Info */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="bg-green-600 p-2 rounded-lg">
-                <Leaf className="w-6 h-6 text-white" />
+              <div className="p-1 rounded-lg">
+                <img src="/leaf.svg" alt="CarbonCredit" className="w-6 h-6" />
               </div>
               <span className="text-xl font-bold">CarbonCredit</span>
             </Link>
@@ -20,15 +20,15 @@ const PublicFooter: React.FC = () => {
               offsetting solutions for businesses worldwide.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <div className="text-gray-400 cursor-default">
                 <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              </div>
+              <div className="text-gray-400 cursor-default">
                 <Linkedin className="w-5 h-5" />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              </div>
+              <div className="text-gray-400 cursor-default">
                 <Github className="w-5 h-5" />
-              </a>
+              </div>
             </div>
           </div>
 
@@ -79,14 +79,14 @@ const PublicFooter: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link to="/coming-soon" className="hover:text-white transition-colors">
                   Careers
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link to="/coming-soon" className="hover:text-white transition-colors">
                   Blog
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -106,14 +106,14 @@ const PublicFooter: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link to="/coming-soon" className="hover:text-white transition-colors">
                   Security
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link to="/coming-soon" className="hover:text-white transition-colors">
                   Status Page
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

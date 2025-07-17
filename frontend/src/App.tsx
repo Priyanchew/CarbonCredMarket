@@ -36,7 +36,8 @@ import {
   TermsPage, 
   ContactPage,
   APIDocsPage,
-  GetStartedPage
+  GetStartedPage,
+  ComingSoonPage
 } from './pages/public';
 
 // Loading component
@@ -199,6 +200,14 @@ function App() {
                 element={
                   <LandingRoute>
                     <APIDocsPage />
+                  </LandingRoute>
+                } 
+              />
+              <Route 
+                path="/coming-soon" 
+                element={
+                  <LandingRoute>
+                    <ComingSoonPage />
                   </LandingRoute>
                 } 
               />

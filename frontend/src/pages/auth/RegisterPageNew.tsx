@@ -13,7 +13,6 @@ import {
   User,
   Eye,
   EyeOff,
-  CheckCircle,
   ArrowLeft,
   ShoppingCart,
   BarChart3,
@@ -57,6 +56,7 @@ export default function RegisterPage() {
     }
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { confirmPassword, ...registerData } = formData;
       await registerBuyer(registerData);
       addToast('Account created successfully!', 'success');

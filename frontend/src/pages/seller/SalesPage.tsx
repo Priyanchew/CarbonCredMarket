@@ -70,17 +70,17 @@ export default function SalesPage() {
       // Convert API response to SaleDetails format
       const formattedSales: SaleDetails[] = salesData.map(sale => ({
         id: sale.id,
-        buyer_name: sale.buyer_name || 'Unknown Buyer',
-        buyer_email: sale.buyer_email || '',
-        project_name: sale.project_name || 'Unknown Project',
+        buyer_name: `Buyer ${sale.buyer_id.slice(0, 8)}`,
+        buyer_email: `buyer-${sale.buyer_id.slice(0, 8)}@example.com`,
+        project_name: `Project ${sale.seller_credit_id.slice(0, 8)}`,
         credit_quantity: sale.quantity,
         price_per_ton: sale.price_per_ton,
         total_amount: sale.total_amount,
         sale_date: sale.transaction_date,
         status: (sale.status as 'completed' | 'pending' | 'failed' | 'processing') || 'pending',
         blockchain_tx_hash: sale.blockchain_tx_hash || undefined,
-        payment_method: sale.payment_method || 'Unknown',
-        carbon_credit_batch_id: sale.carbon_credit_batch_id || ''
+        payment_method: 'Blockchain',
+        carbon_credit_batch_id: sale.seller_credit_id
       }));
 
       setSales(formattedSales);

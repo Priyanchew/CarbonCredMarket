@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useToast } from '../../hooks/useToast';
-import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
+import { Button } from '../../components/ui/Button';
+import { Loading } from '../../components/ui/Loading';
 import { 
+  ShoppingBag, 
   Leaf, 
   Building, 
   MapPin, 
@@ -15,24 +17,23 @@ import {
   EyeOff,
   CheckCircle,
   ArrowLeft,
-  ShoppingCart,
-  BarChart3,
-  FileText
+  Phone
 } from 'lucide-react';
+import type { RegisterData } from '../../types';
 
 export default function RegisterPage() {
   const { registerBuyer, isLoading } = useAuthStore();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    full_name: '',
+  const [formData, setFormData] = useState<RegisterData & { confirmPassword: string }>({
     email: '',
     password: '',
     confirmPassword: '',
     company_name: '',
     industry: '',
     location: '',
+    full_name: '',
     phone: ''
   });
 
@@ -45,7 +46,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (formData.password !== formData.confirmPassword) {
       addToast('Passwords do not match', 'error');
       return;
@@ -57,9 +58,21 @@ export default function RegisterPage() {
     }
 
     try {
-      const { confirmPassword, ...registerData } = formData;
-      await registerBuyer(registerData);
-      addToast('Account created successfully!', 'success');
+      // Register with buyer type
+      const registerPayload: RegisterData = {
+        email: formData.email,
+        password: formData.password,
+        company_name: formData.company_name,
+        industry: formData.industry,
+        location: formData.location,
+        full_name: formData.full_name,
+        phone: formData.phone
+      };
+
+      // Use buyer registration method
+      await registerBuyer(registerPayload);
+      
+      addToast('Account created successfully! Welcome to CarbonCredit Marketplace.', 'success');
       navigate('/app/buyer/dashboard');
     } catch (error: unknown) {
       console.error('Registration error:', error);
@@ -69,22 +82,23 @@ export default function RegisterPage() {
   };
 
   const industries = [
-    'Technology',
+    'Technology & Software',
     'Manufacturing',
-    'Financial Services',
+    'Finance & Banking',
     'Healthcare',
-    'Retail',
-    'Transportation',
-    'Energy',
-    'Real Estate',
-    'Education',
-    'Government',
+    'Energy & Utilities',
+    'Retail & E-commerce',
+    'Transportation & Logistics',
+    'Agriculture & Food',
+    'Construction & Real Estate',
+    'Consulting Services',
     'Non-Profit',
+    'Government',
     'Other'
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-purple-50 flex items-center justify-center p-6">
       <div className="w-full max-w-2xl">
         {/* Back Button */}
         <div className="mb-6">
@@ -101,12 +115,12 @@ export default function RegisterPage() {
           <CardHeader className="text-center pb-8">
             <div className="flex justify-center mb-4">
               <div className="bg-blue-100 p-3 rounded-full">
-                <ShoppingCart className="h-8 w-8 text-blue-600" />
+                <ShoppingBag className="h-8 w-8 text-blue-600" />
               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">Start Your Carbon Journey</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Join as a Carbon Credit Buyer</h1>
             <p className="text-gray-600 mt-2">
-              Join thousands of companies reducing their carbon footprint and achieving net-zero goals.
+              Access verified carbon credits to offset your company's emissions and achieve net-zero goals.
             </p>
           </CardHeader>
 
@@ -115,24 +129,24 @@ export default function RegisterPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 p-6 bg-gray-50 rounded-lg">
               <div className="text-center">
                 <div className="bg-blue-100 p-2 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
-                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                  <Leaf className="h-6 w-6 text-blue-600" />
                 </div>
-                <h3 className="font-medium text-gray-900">Track Emissions</h3>
-                <p className="text-sm text-gray-600">Monitor your carbon footprint</p>
+                <h3 className="font-medium text-gray-900">Verified Credits</h3>
+                <p className="text-sm text-gray-600">High-quality, certified offsets</p>
               </div>
               <div className="text-center">
                 <div className="bg-green-100 p-2 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
-                  <Leaf className="h-6 w-6 text-green-600" />
+                  <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
-                <h3 className="font-medium text-gray-900">Offset Carbon</h3>
-                <p className="text-sm text-gray-600">Purchase verified credits</p>
+                <h3 className="font-medium text-gray-900">Easy Purchasing</h3>
+                <p className="text-sm text-gray-600">Simple, transparent buying process</p>
               </div>
               <div className="text-center">
                 <div className="bg-purple-100 p-2 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-2">
-                  <FileText className="h-6 w-6 text-purple-600" />
+                  <ShoppingBag className="h-6 w-6 text-purple-600" />
                 </div>
-                <h3 className="font-medium text-gray-900">Generate Reports</h3>
-                <p className="text-sm text-gray-600">Compliance & sustainability</p>
+                <h3 className="font-medium text-gray-900">Portfolio Tracking</h3>
+                <p className="text-sm text-gray-600">Monitor your offset investments</p>
               </div>
             </div>
 
@@ -209,12 +223,16 @@ export default function RegisterPage() {
                       required
                     >
                       <option value="">Select your industry</option>
-                      {industries.map((industry) => (
-                        <option key={industry} value={industry}>{industry}</option>
+                      {industries.map(industry => (
+                        <option key={industry} value={industry.toLowerCase().replace(/\s+/g, '_')}>
+                          {industry}
+                        </option>
                       ))}
                     </select>
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Location *
@@ -226,7 +244,7 @@ export default function RegisterPage() {
                         value={formData.location}
                         onChange={(e) => handleInputChange('location', e.target.value)}
                         className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="New York, USA"
+                        placeholder="City, Country"
                         required
                       />
                     </div>
@@ -236,20 +254,23 @@ export default function RegisterPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Phone Number
                     </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="+1 (555) 123-4567"
-                    />
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Security */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Security</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Security</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -264,16 +285,16 @@ export default function RegisterPage() {
                         className="w-full pl-10 pr-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Create a strong password"
                         required
-                        minLength={6}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    <p className="text-xs text-gray-500 mt-1">Minimum 6 characters required</p>
                   </div>
 
                   <div>
@@ -283,63 +304,64 @@ export default function RegisterPage() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                       <input
-                        type={showPassword ? "text" : "password"}
+                        type="password"
                         value={formData.confirmPassword}
                         onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                         className="w-full pl-10 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Confirm your password"
                         required
-                        minLength={6}
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Terms */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-700">
-                  By creating an account, you agree to our{' '}
-                  <Link to="/terms" className="text-blue-600 hover:text-blue-700 font-medium">
-                    Terms of Service
-                  </Link>{' '}
-                  and{' '}
-                  <Link to="/privacy" className="text-blue-600 hover:text-blue-700 font-medium">
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
-              </div>
+              {/* Terms & Submit */}
+              <div className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium mb-1">Ready to Start Offsetting?</p>
+                      <p>
+                        Join thousands of companies already using our platform to achieve their 
+                        sustainability goals through verified carbon credits.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Creating Account...
-                  </span>
-                ) : (
-                  'Create Account'
-                )}
-              </Button>
-            </form>
-
-            {/* Sign In Link */}
-            <div className="mt-8 text-center">
-              <p className="text-gray-600">
-                Already have an account?{' '}
-                <Link 
-                  to="/login" 
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                <Button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 >
-                  Sign in here
-                </Link>
-              </p>
-            </div>
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Loading size="sm" />
+                      Creating Account...
+                    </div>
+                  ) : (
+                    'Create Buyer Account'
+                  )}
+                </Button>
+
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+                      Sign in here
+                    </Link>
+                  </p>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Want to sell carbon credits?{' '}
+                    <Link to="/auth/seller/register" className="text-green-600 hover:text-green-700 font-medium">
+                      Register as Seller
+                    </Link>
+                  </p>
+                </div>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>

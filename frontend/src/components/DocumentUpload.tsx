@@ -33,7 +33,6 @@ interface ProcessingStatus {
 const DocumentUpload: React.FC<DocumentUploadProps> = ({ onExtractedData, onClose }) => {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'error'>('idle');
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
-  const [currentTaskId, setCurrentTaskId] = useState<string | null>(null);
   const [extractedActivities, setExtractedActivities] = useState<ExtractedActivity[]>([]);
   const [selectedActivities, setSelectedActivities] = useState<Set<number>>(new Set());
 
@@ -92,7 +91,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onExtractedData, onClos
 
     const handleAsyncUpload = async (file: File) => {
       const result = await apiClient.uploadDocument(file);
-      setCurrentTaskId(result.task_id);
       setUploadStatus('processing');
 
       // Start polling for status
@@ -245,7 +243,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onExtractedData, onClos
                 onClick={() => {
                   setUploadStatus('idle');
                   setProcessingStatus(null);
-                  setCurrentTaskId(null);
                 }}
                 className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
               >

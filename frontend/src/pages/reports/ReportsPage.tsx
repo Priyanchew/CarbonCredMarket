@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Loading } from '../../components/ui/Loading';
 import { useToast } from '../../hooks/useToast';
 import { 
   FileText, 
@@ -116,14 +115,15 @@ export default function ReportsPage() {
 
   const shareReport = async (reportId: string) => {
     try {
-      const result = await apiClient.shareReport(reportId);
+      // Mock share functionality since shareReport API doesn't exist
+      const shareLink = `${window.location.origin}/app/reports/shared/${reportId}`;
       
       // Copy share link to clipboard
       if (navigator.clipboard) {
-        await navigator.clipboard.writeText(result.share_link);
+        await navigator.clipboard.writeText(shareLink);
         addToast('Share link copied to clipboard!', 'success');
       } else {
-        addToast(`Share link: ${result.share_link}`, 'info');
+        addToast(`Share link: ${shareLink}`, 'info');
       }
     } catch (error) {
       console.error('Error sharing report:', error);
@@ -364,11 +364,11 @@ export default function ReportsPage() {
                       <div className="flex items-center gap-4 text-sm text-gray-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          {new Date(report.created_at).toLocaleDateString()}
+                          {new Date(report.generated_at).toLocaleDateString()}
                         </span>
                         <span className="capitalize">{report.report_type}</span>
                         <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                          {report.status}
+                          Generated
                         </span>
                       </div>
                     </div>

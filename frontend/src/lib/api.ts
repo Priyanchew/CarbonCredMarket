@@ -848,7 +848,14 @@ class ApiClient {
   }
 
   // Blockchain methods
-  async mintCredits(data: { project_id: string; amount: number; wallet_address: string }) {
+  async mintCredits(data: { 
+    project_id: string; 
+    amount: number; 
+    wallet_address: string; 
+    seller_credit_id?: string; 
+    vintage_year?: number; 
+    price_per_ton?: number; 
+  }) {
     return this.request('/blockchain/mint-credits', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -860,10 +867,6 @@ class ApiClient {
       method: 'POST', 
       body: JSON.stringify(data),
     });
-  }
-
-  async getWalletBalance(walletAddress: string) {
-    return this.request(`/blockchain/balance/${walletAddress}`);
   }
 
   async getBlockchainStatus() {

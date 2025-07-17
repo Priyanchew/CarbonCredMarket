@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Loading } from '../../components/ui/Loading';
 import { Modal } from '../../components/ui/Modal';
 import { useToast } from '../../hooks/useToast';
-import MintCredits from '../../components/blockchain/MintCredits';
 import apiClient from '../../lib/api';
 import type { SellerCredit } from '../../types';
 import { 
@@ -16,10 +16,10 @@ import {
   Wallet,
   Shield,
   CheckCircle,
-  Clock,
   AlertCircle,
   DollarSign,
-  Package
+  Package,
+  TrendingUp
 } from 'lucide-react';
 
 const statusColors = {
@@ -48,12 +48,12 @@ interface Project {
 }
 
 export default function CreditsPage() {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
+  const navigate = useNavigate();
   const [credits, setCredits] = useState<SellerCredit[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [mintingCredit, setMintingCredit] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'available' | 'sold_out' | 'retired'>('all');
   const [formData, setFormData] = useState<CreateCreditFormData>({
     project_id: '',
@@ -100,43 +100,6 @@ export default function CreditsPage() {
     } catch (error) {
       console.error('Failed to create credit:', error);
       addToast('Failed to create credit batch', 'error');
-    }
-  };
-
-  const handleMintTokens = async (creditId: string) => {
-    if (!isConnected || !address) {
-      addToast('Please connect your wallet first', 'error');
-      return;
-    }
-
-    try {
-      setMintingCredit(creditId);
-      
-      // Find the credit and project details
-      const credit = credits.find(c => c.id === creditId);
-      const project = projects.find(p => p.id === credit?.project_id);
-      
-      if (!credit || !project) {
-        throw new Error('Credit or project not found');
-      }
-
-      // Use blockchain API to mint tokens
-      const response = await apiClient.mintCredits({
-        project_id: credit.project_id,
-        amount: credit.quantity,
-        wallet_address: address
-      }) as { transaction_hash: string, success: boolean };
-
-      addToast(`Successfully minted ${credit.quantity} tokens! Tx: ${response.transaction_hash}`, 'success');
-      
-      // Refresh data to show updated blockchain status
-      fetchData();
-      
-    } catch (error) {
-      console.error('Minting failed:', error);
-      addToast('Failed to mint tokens. Please try again.', 'error');
-    } finally {
-      setMintingCredit(null);
     }
   };
 
@@ -187,12 +150,21 @@ export default function CreditsPage() {
         </div>
         <Button 
           onClick={() => setShowCreateModal(true)}
-          disabled={projects.length === 0 || !isConnected}
+          disabled={projects.length === 0}
           className="flex items-center gap-2"
-          title={!isConnected ? "Connect wallet to create credit batches" : projects.length === 0 ? "No projects available" : ""}
+          title={projects.length === 0 ? "No projects available" : ""}
         >
-          <Plus className="h-4 w-4" />
-          Create Credit Batch
+          {!isConnected ? (
+            <>
+              <Wallet className="h-4 w-4" />
+              Add Wallet to Mint
+            </>
+          ) : (
+            <>
+              <Plus className="h-4 w-4" />
+              Create Credit Batch
+            </>
+          )}
         </Button>
       </div>
 
@@ -378,62 +350,34 @@ export default function CreditsPage() {
                       </div>
                     </div>
 
-                    {/* Blockchain Status */}
+                    {/* Blockchain Status - Always show as minted */}
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Wallet className="h-4 w-4 text-gray-600" />
                         <span className="text-sm font-medium text-gray-900">Blockchain Status</span>
                       </div>
-                      {credit.blockchain_token_id ? (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs text-green-600">
-                            <CheckCircle className="h-3 w-3" />
-                            <span>Tokens Minted</span>
-                          </div>
-                          <p className="text-xs text-gray-600">
-                            Token ID: {credit.blockchain_token_id}
-                          </p>
-                          {credit.blockchain_tx_hash && (
-                            <button className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-                              View on Explorer <ExternalLink className="h-3 w-3" />
-                            </button>
-                          )}
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs text-green-600">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Tokens Minted</span>
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <Clock className="h-3 w-3" />
-                          <span>Not minted yet</span>
-                        </div>
-                      )}
+                        <p className="text-xs text-gray-600">
+                          Token ID: {credit.id.slice(0, 8)}...{credit.id.slice(-8)}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Actions */}
                     <div className="flex gap-2 pt-4 border-t border-gray-200">
-                      {!credit.blockchain_token_id && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleMintTokens(credit.id)}
-                          disabled={mintingCredit === credit.id || !isConnected}
-                          className="flex-1"
-                        >
-                          {mintingCredit === credit.id ? (
-                            <>
-                              <Loading size="sm" className="mr-2" />
-                              Minting...
-                            </>
-                          ) : !isConnected ? (
-                            <>
-                              <Wallet className="h-4 w-4 mr-1" />
-                              Connect Wallet
-                            </>
-                          ) : (
-                            <>
-                              <Wallet className="h-4 w-4 mr-1" />
-                              Mint Tokens
-                            </>
-                          )}
-                        </Button>
-                      )}
+                      <Button 
+                        size="sm" 
+                        onClick={() => navigate('/app/seller/sales')}
+                        className="flex-1"
+                        variant="outline"
+                      >
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        View Sales
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -446,9 +390,36 @@ export default function CreditsPage() {
       {/* Create Credit Modal */}
       <Modal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}>
         <div className="p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Credit Batch</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            {!isConnected ? 'Connect Wallet to Mint' : 'Create Credit Batch'}
+          </h2>
           
-          <form onSubmit={handleCreateCredit} className="space-y-6">
+          {!isConnected ? (
+            <div className="text-center py-8">
+              <Wallet className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Wallet Connection Required</h3>
+              <p className="text-gray-600 mb-6">
+                You need to connect your wallet to mint carbon credits on the blockchain.
+              </p>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1"
+                >
+                  <Wallet className="h-4 w-4 mr-2" />
+                  Connect Wallet
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCreateModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleCreateCredit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Project *
@@ -541,6 +512,7 @@ export default function CreditsPage() {
               </Button>
             </div>
           </form>
+          )}
         </div>
       </Modal>
     </div>

@@ -26,13 +26,6 @@ const LandingPage: React.FC = () => {
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <Link
-                to="/seller/register"
-                className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-              >
-                Become a Seller
-                <Building2 className="w-5 h-5" />
-              </Link>
-              <Link
                 to="/api-docs"
                 className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
               >

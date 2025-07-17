@@ -60,7 +60,6 @@ export default function EmissionsPage() {
     waste: ['kg', 'tons', 'cubic meters', 'units']
   };
   const [allEmissions, setAllEmissions] = useState<EmissionActivity[]>([]);
-  const [filteredEmissions, setFilteredEmissions] = useState<EmissionActivity[]>([]);
 
   const fetchEmissions = useCallback(async () => {
     try {
@@ -105,7 +104,6 @@ export default function EmissionsPage() {
       filtered = filtered.filter(emission => emission.date <= filters.endDate);
     }
 
-    setFilteredEmissions(filtered);
     setEmissions(filtered); // Keep the old emissions state for backwards compatibility
   }, [allEmissions, filters]);
 

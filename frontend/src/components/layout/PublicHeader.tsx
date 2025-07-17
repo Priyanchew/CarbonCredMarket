@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, Leaf, ArrowRight } from 'lucide-react';
+import { Menu, X, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 const PublicHeader: React.FC = () => {
@@ -17,8 +17,8 @@ const PublicHeader: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="bg-green-600 p-2 rounded-lg">
-              <Leaf className="w-6 h-6 text-white" />
+            <div className="rounded-lg">
+              <img src="/leaf.svg" alt="Carbon Credit" className="w-6 h-6" />
             </div>
             <span className="text-xl font-bold text-gray-900">CarbonCredit</span>
           </Link>

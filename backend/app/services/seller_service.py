@@ -196,6 +196,19 @@ class SellerService:
                 detail="Failed to create credit listing"
             )
 
+    async def get_seller_credit_by_id(self, credit_id: UUID) -> Optional[SellerCredit]:
+        """Get a specific seller credit by ID."""
+        try:
+            response = self.db.table("seller_credits").select("*").eq("id", str(credit_id)).execute()
+            
+            if response.data:
+                return SellerCredit(**response.data[0])
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting seller credit by ID: {str(e)}")
+            return None
+
     async def get_seller_credits(self, user_id: UUID, skip: int = 0, limit: int = 20) -> List[SellerCredit]:
         """Get all credit listings for a seller."""
         try:
@@ -347,3 +360,86 @@ class SellerService:
         except Exception as e:
             logger.error(f"Error updating user type: {str(e)}")
             return False
+
+    async def update_sold_quantity(self, seller_credit_id: UUID, quantity_sold: float) -> Optional[SellerCredit]:
+        """Update the sold_quantity for a seller credit after a purchase."""
+        try:
+            # First get the current seller credit
+            current_response = self.db.table("seller_credits").select("*").eq("id", str(seller_credit_id)).execute()
+            
+            if not current_response.data:
+                logger.error(f"Seller credit not found: {seller_credit_id}")
+                return None
+            
+            current_credit = current_response.data[0]
+            current_sold_quantity = float(current_credit.get("sold_quantity", 0))
+            new_sold_quantity = current_sold_quantity + quantity_sold
+            
+            logger.info(f"Updating seller credit {seller_credit_id}: sold_quantity {current_sold_quantity} -> {new_sold_quantity}")
+            
+            # Update the sold_quantity
+            update_response = self.db.table("seller_credits").update({
+                "sold_quantity": new_sold_quantity,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", str(seller_credit_id)).execute()
+            
+            logger.info(f"Update response: {update_response}")
+            
+            # Always verify by fetching the record again (RLS might return empty data)
+            verification_response = self.db.table("seller_credits").select("*").eq("id", str(seller_credit_id)).execute()
+            
+            if verification_response.data:
+                updated_record = verification_response.data[0]
+                actual_sold_quantity = float(updated_record.get("sold_quantity", 0))
+                
+                if actual_sold_quantity == new_sold_quantity:
+                    logger.info(f"Successfully verified update for {seller_credit_id}: sold_quantity = {actual_sold_quantity}")
+                    return SellerCredit.model_validate(updated_record)
+                else:
+                    logger.error(f"Update verification failed for {seller_credit_id}: expected {new_sold_quantity}, got {actual_sold_quantity}")
+                    return None
+            else:
+                logger.error(f"Could not verify update for seller credit {seller_credit_id}")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error updating sold quantity for seller credit {seller_credit_id}: {str(e)}")
+            return None
+
+    async def update_seller_credit_blockchain_info(
+        self, 
+        seller_credit_id: UUID, 
+        blockchain_tx_hash: str,
+        blockchain_token_id: Optional[str] = None
+    ) -> Optional[SellerCredit]:
+        """Update blockchain information for an existing seller credit."""
+        try:
+            update_data = {
+                "blockchain_tx_hash": blockchain_tx_hash,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            if blockchain_token_id:
+                update_data["blockchain_token_id"] = blockchain_token_id
+            
+            logger.info(f"Updating seller credit {seller_credit_id} with blockchain info: {update_data}")
+            
+            # Update the seller credit with blockchain information
+            update_response = self.db.table("seller_credits").update(update_data).eq("id", str(seller_credit_id)).execute()
+            
+            logger.info(f"Blockchain update response: {update_response}")
+            
+            # Verify the update by fetching the updated record
+            verification_response = self.db.table("seller_credits").select("*").eq("id", str(seller_credit_id)).execute()
+            
+            if verification_response.data:
+                updated_record = verification_response.data[0]
+                logger.info(f"Successfully updated seller credit {seller_credit_id} with blockchain info")
+                return SellerCredit.model_validate(updated_record)
+            else:
+                logger.error(f"Could not verify blockchain update for seller credit {seller_credit_id}")
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error updating blockchain info for seller credit {seller_credit_id}: {str(e)}")
+            return None

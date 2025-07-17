@@ -1,6 +1,5 @@
 import { NavLink } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { useVerification } from '../../hooks/useVerification';
 import { 
   Cloud, 
   FileText, 
@@ -12,11 +11,7 @@ import {
   Coins,
   BarChart3,
   Shield,
-  Users,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  XCircle
+  Users
 } from 'lucide-react';
 
 const buyerNavigation = [

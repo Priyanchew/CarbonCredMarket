@@ -5,7 +5,6 @@ import { useToast } from '../../hooks/useToast';
 import { Button } from '../../components/ui/Button';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { 
-  Leaf, 
   Mail, 
   Lock, 
   Eye, 
@@ -61,8 +60,8 @@ export default function LoginPage() {
         <Card className="shadow-2xl border-0">
           <CardHeader className="text-center pb-8">
             <div className="flex justify-center mb-4">
-              <div className="bg-green-100 p-3 rounded-full">
-                <Leaf className="h-8 w-8 text-green-600" />
+              <div className="p-1 rounded-full">
+                <img src="/leaf.svg" alt="Carbon Marketplace" className="h-8 w-8" />
               </div>
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>

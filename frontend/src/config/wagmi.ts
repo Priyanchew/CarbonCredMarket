@@ -7,18 +7,19 @@ const localhost = defineChain({
   network: 'localhost',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
-    default: { http: ['http://127.0.0.1:8545'] },
-    public: { http: ['http://127.0.0.1:8545'] }
+    default: { http: ['http://13.51.170.69:8545'] },
+    public: { http: ['http://13.51.170.69:8545'] }
   },
   blockExplorers: {
-    default: { name: 'Etherscan', url: 'http://localhost:8545' },
+    default: { name: 'Etherscan', url: 'http://13.51.170.69:8545' },
   }
 });
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'Carbon Marketplace',
   projectId: '08a096acf228fb4dee2ba701fb031dcf',
-  chains: [localhost]
+  chains: [localhost],
+  ssr: false
 });
 
 export { localhost };

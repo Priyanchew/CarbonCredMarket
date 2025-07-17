@@ -42,7 +42,7 @@ export function formatDate(date: string | Date): string {
 /**
  * Calculate CO2e based on activity type and amount
  */
-export function calculateCO2e(type: string, amount: number, unit: string): number {
+export function calculateCO2e(type: string, amount: number): number {
   const factors = {
     electricity: 0.4, // kg CO2e per kWh
     gas: 5.3, // kg CO2e per therm
@@ -58,7 +58,7 @@ export function calculateCO2e(type: string, amount: number, unit: string): numbe
 /**
  * Debounce function for search inputs
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {

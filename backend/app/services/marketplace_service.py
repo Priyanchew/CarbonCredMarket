@@ -23,117 +23,244 @@ class MarketplaceService:
         min_price: Optional[float] = None,
         max_price: Optional[float] = None
     ) -> List[CarbonCredit]:
-        """Get available carbon projects (now showing as credits in marketplace)."""
-        # Changed from carbon_credits to carbon_projects table
-        query = self.db.table("carbon_projects").select("*").eq("status", "approved")
-        
-        if project_type:
-            query = query.eq("project_type", project_type)
-        
-        response = query.order("name").range(skip, skip + limit - 1).execute()
-        
-        credits = []
-        for project_data in response.data:
-            # Convert project data to CarbonCredit format for marketplace display
-            credit_data = {
-                'id': project_data['id'],
-                'project_name': project_data['name'],
-                'description': project_data['description'],
-                'project_type': project_data['project_type'],
-                'project_location': f"{project_data['location']}, {project_data['country']}",
-                'verification_standard': project_data['standard'],
-                'vintage_year': project_data['vintage_year'],
-                # Calculate total credits available based on annual reduction and lifetime
-                'total_quantity': project_data['estimated_annual_reduction'] * project_data['total_project_lifetime'],
-                'available_quantity': project_data['estimated_annual_reduction'] * project_data['total_project_lifetime'],
-                'price_per_ton': 25.0,  # Default price, should be configurable
-                'status': 'available',
-                'created_at': project_data['created_at'],
-                'updated_at': project_data['updated_at']
-            }
+        """Get available carbon credits from seller listings."""
+        try:
+            # Query seller_credits with project information
+            query = self.db.table("seller_credits").select(
+                "*, carbon_projects(*)"
+            ).eq("status", "available")
             
-            # Apply price filters if specified
-            if min_price is not None and credit_data['price_per_ton'] < min_price:
-                continue
-            if max_price is not None and credit_data['price_per_ton'] > max_price:
-                continue
+            # Filter by project type if specified
+            if project_type:
+                query = query.eq("carbon_projects.project_type", project_type)
+            
+            # Apply price filters
+            if min_price is not None:
+                query = query.gte("price_per_ton", min_price)
+            if max_price is not None:
+                query = query.lte("price_per_ton", max_price)
+            
+            response = query.order("created_at", desc=True).range(skip, skip + limit - 1).execute()
+            
+            credits = []
+            for seller_credit in response.data:
+                project = seller_credit.get('carbon_projects')
+                if not project:
+                    continue
                 
-            credits.append(CarbonCredit.model_validate(credit_data))
-        
-        return credits
+                # Calculate available quantity (quantity - sold_quantity)
+                available_quantity = float(seller_credit['quantity']) - float(seller_credit.get('sold_quantity', 0))
+                
+                # Skip if no quantity available
+                if available_quantity <= 0:
+                    continue
+                
+                # Convert to CarbonCredit format for marketplace display
+                # Send quantity field as available_quantity to frontend (user's request)
+                credit_data = {
+                    'id': seller_credit['id'],  # Use seller_credit.id as the credit_id
+                    'project_name': project['name'],
+                    'description': project['description'],
+                    'project_type': project['project_type'],
+                    'project_location': f"{project['location']}, {project['country']}",
+                    'verification_standard': project['standard'],
+                    'vintage_year': seller_credit['vintage_year'],
+                    'total_quantity': float(seller_credit['quantity']),
+                    'available_quantity': float(seller_credit['quantity']),  # Send quantity field to frontend
+                    'price_per_ton': float(seller_credit['price_per_ton']),
+                    'status': 'available',
+                    'created_at': seller_credit['created_at'],
+                    'updated_at': seller_credit['updated_at']
+                }
+                
+                credits.append(CarbonCredit.model_validate(credit_data))
+            
+            return credits
+            
+        except Exception as e:
+            logger.error(f"Error getting available credits: {str(e)}")
+            return []
 
     async def get_credit_by_id(self, credit_id: UUID) -> Optional[CarbonCredit]:
-        """Get a specific carbon project (displayed as credit) by ID."""
-        response = self.db.table("carbon_projects").select("*").eq("id", str(credit_id)).single().execute()
-        if response.data:
-            project_data = response.data
-            # Convert project data to CarbonCredit format
-            credit_data = {
-                'id': project_data['id'],
-                'project_name': project_data['name'],
-                'description': project_data['description'],
-                'project_type': project_data['project_type'],
-                'project_location': f"{project_data['location']}, {project_data['country']}",
-                'verification_standard': project_data['standard'],
-                'vintage_year': project_data['vintage_year'],
-                'total_quantity': project_data['estimated_annual_reduction'] * project_data['total_project_lifetime'],
-                'available_quantity': project_data['estimated_annual_reduction'] * project_data['total_project_lifetime'],
-                'price_per_ton': 25.0,
-                'status': 'available',
-                'created_at': project_data['created_at'],
-                'updated_at': project_data['updated_at']
-            }
-            return CarbonCredit.model_validate(credit_data)
-        return None
+        """Get a specific seller credit by ID (displayed as credit in marketplace)."""
+        try:
+            response = self.db.table("seller_credits").select(
+                "*, carbon_projects(*)"
+            ).eq("id", str(credit_id)).single().execute()
+            
+            if response.data:
+                seller_credit = response.data
+                project = seller_credit.get('carbon_projects')
+                
+                if not project:
+                    return None
+                
+                # Calculate available quantity
+                available_quantity = float(seller_credit['quantity']) - float(seller_credit.get('sold_quantity', 0))
+                
+                # Convert to CarbonCredit format
+                credit_data = {
+                    'id': seller_credit['id'],
+                    'project_name': project['name'],
+                    'description': project['description'],
+                    'project_type': project['project_type'],
+                    'project_location': f"{project['location']}, {project['country']}",
+                    'verification_standard': project['standard'],
+                    'vintage_year': seller_credit['vintage_year'],
+                    'total_quantity': float(seller_credit['quantity']),
+                    'available_quantity': available_quantity,
+                    'price_per_ton': float(seller_credit['price_per_ton']),
+                    'status': 'available' if available_quantity > 0 else 'sold_out',
+                    'created_at': seller_credit['created_at'],
+                    'updated_at': seller_credit['updated_at']
+                }
+                return CarbonCredit.model_validate(credit_data)
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error getting credit by ID: {str(e)}")
+            return None
 
     async def purchase_credits(self, user_id: UUID, purchase_data: CarbonCreditPurchaseCreate) -> CarbonCreditPurchase:
-        """Purchase carbon credits using direct table operations."""
+        """Purchase carbon credits from seller listings using database operations."""
         try:
-            # Get credit details
-            credit_response = self.db.table("carbon_credits").select("*").eq("id", str(purchase_data.credit_id)).single().execute()
+            # Get seller credit details (purchase_data.credit_id refers to seller_credit.id)
+            seller_credit_response = self.db.table("seller_credits").select(
+                "*, carbon_projects(*)"
+            ).eq("id", str(purchase_data.credit_id)).single().execute()
             
-            if not credit_response.data:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Carbon credit not found")
+            if not seller_credit_response.data:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Seller credit not found")
             
-            credit = credit_response.data
+            seller_credit = seller_credit_response.data
+            project = seller_credit.get('carbon_projects')
             
-            # Check if credit is available
-            if credit['status'] != 'available':
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Carbon credit is not available")
+            if not project:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Associated project not found")
             
-            # Calculate actual available quantity by checking existing purchases
-            purchases_response = self.db.table("carbon_credit_purchases").select("quantity").eq("credit_id", str(purchase_data.credit_id)).execute()
-            total_purchased = sum(float(p['quantity']) for p in purchases_response.data) if purchases_response.data else 0
-            actual_available = float(credit['total_quantity']) - total_purchased
+            # Check if seller credit is available
+            if seller_credit['status'] != 'available':
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Credit listing is not available")
+            
+            # Calculate actual available quantity
+            available_quantity = float(seller_credit['quantity']) - float(seller_credit.get('sold_quantity', 0))
             
             # Check if sufficient quantity is available
-            if actual_available < purchase_data.quantity:
+            if available_quantity < purchase_data.quantity:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST, 
-                    detail=f"Insufficient quantity available. Available: {actual_available}, Requested: {purchase_data.quantity}"
+                    detail=f"Insufficient quantity available. Available: {available_quantity}, Requested: {purchase_data.quantity}"
                 )
             
             # Calculate costs
-            price_per_ton = float(credit['price_per_ton'])
+            price_per_ton = float(seller_credit['price_per_ton'])
             total_cost = price_per_ton * purchase_data.quantity
             
-            # Create purchase record
+            # First, attempt blockchain transaction before creating database records
+            blockchain_success = False
+            blockchain_tx_hash = None
+            
+            try:
+                from .blockchain_service import BlockchainService
+                blockchain_service = BlockchainService()
+                
+                if not blockchain_service.is_connected():
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="Blockchain service is not available. Please try again later."
+                    )
+                
+                # For marketplace purchases, mint credits to user's address if available
+                # TODO: Get user's wallet address from user profile when wallet integration is complete
+                # For now, mint to admin address and track ownership in database
+                user_address = blockchain_service.admin_account.address  # Temporary fallback
+                
+                blockchain_tx_hash = blockchain_service.mint_carbon_credits(
+                    to_address=user_address,
+                    amount=purchase_data.quantity,
+                    project_id=str(project['id']),
+                    vintage=str(seller_credit['vintage_year']),
+                    standard=project.get('standard', 'VCS'),
+                    price=price_per_ton
+                )
+                
+                if not blockchain_tx_hash:
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="Blockchain transaction failed. Please try again later."
+                    )
+                
+                blockchain_success = True
+                logger.info(f"Blockchain minting successful: {blockchain_tx_hash}")
+                    
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.error(f"Blockchain transaction failed: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=f"Blockchain transaction failed: {str(e)}"
+                )
+            
+            # Only create database records after successful blockchain transaction
             purchase_data_dict = {
                 "user_id": str(user_id),
-                "credit_id": str(purchase_data.credit_id),
+                "credit_id": str(purchase_data.credit_id),  # This is seller_credit.id
                 "quantity": purchase_data.quantity,
                 "price_per_ton": price_per_ton,
                 "total_cost": total_cost,
-                "status": PurchaseStatus.COMPLETED.value,
-                "retired_quantity": 0.0
+                "status": "completed",
+                "retired_quantity": 0.0,
+                "blockchain_tx_hash": blockchain_tx_hash
             }
             
-            logger.info(f"Attempting to insert purchase data: {purchase_data_dict}")
-            logger.info(f"Database client type: {type(self.db)}")
+            logger.info(f"Creating purchase record: {purchase_data_dict}")
+            logger.info(f"Seller credit ID being used: {purchase_data.credit_id}")
+            logger.info(f"Type of credit_id: {type(purchase_data.credit_id)}")
+            
+            # Verify the seller credit exists before attempting purchase
+            verify_response = self.db.table("seller_credits").select("id").eq("id", str(purchase_data.credit_id)).execute()
+            logger.info(f"Verification response: {verify_response.data}")
+            if not verify_response.data:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Seller credit {purchase_data.credit_id} not found in seller_credits table")
+            
             purchase_response = self.db.table("carbon_credit_purchases").insert(purchase_data_dict).execute()
             
             if not purchase_response.data:
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create purchase record")
+            
+            purchase_id = purchase_response.data[0]['id']
+            
+            # Create sale transaction for the seller (still references seller_credit)
+            sale_data = {
+                "seller_credit_id": str(purchase_data.credit_id),  # Original seller_credit.id
+                "buyer_id": str(user_id),
+                "quantity": purchase_data.quantity,
+                "price_per_ton": price_per_ton,
+                "total_amount": total_cost,
+                "status": "completed"
+            }
+            
+            sale_response = self.db.table("sale_transactions").insert(sale_data).execute()
+            
+            if not sale_response.data:
+                # Rollback purchase if sale creation fails
+                self.db.table("carbon_credit_purchases").delete().eq("id", purchase_id).execute()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create sale transaction")
+            
+            # Update seller_credits sold_quantity
+            new_sold_quantity = float(seller_credit.get('sold_quantity', 0)) + purchase_data.quantity
+            update_response = self.db.table("seller_credits").update({
+                "sold_quantity": new_sold_quantity
+            }).eq("id", str(purchase_data.credit_id)).execute()
+            
+            if not update_response.data:
+                # Rollback both purchase and sale if update fails
+                self.db.table("carbon_credit_purchases").delete().eq("id", purchase_id).execute()
+                self.db.table("sale_transactions").delete().eq("id", sale_response.data[0]['id']).execute()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update seller credit inventory")
+            
+            logger.info(f"Purchase completed successfully. Purchase ID: {purchase_id}, Sale ID: {sale_response.data[0]['id']}")
             
             return CarbonCreditPurchase.model_validate(purchase_response.data[0])
             
@@ -146,7 +273,7 @@ class MarketplaceService:
     async def get_user_purchases(self, user_id: UUID, skip: int = 0, limit: int = 100) -> List[CarbonCreditPurchase]:
         """Get all purchases for a user with pagination."""
         response = self.db.table("carbon_credit_purchases").select(
-            "*, credit:carbon_credits(*)"
+            "*, credit:seller_credits(*, carbon_projects(*))"
         ).eq("user_id", str(user_id)).order("purchase_date", desc=True).range(skip, skip + limit - 1).execute()
         
         return [CarbonCreditPurchase.model_validate(purchase) for purchase in response.data]
@@ -214,7 +341,7 @@ class MarketplaceService:
         """Get a specific purchase by ID for a user."""
         try:
             response = self.db.table("carbon_credit_purchases").select(
-                "*, credit:carbon_credits(*)"
+                "*, credit:seller_credits(*, carbon_projects(*))"
             ).eq("id", str(purchase_id)).eq("user_id", str(user_id)).execute()
             
             if not response.data:

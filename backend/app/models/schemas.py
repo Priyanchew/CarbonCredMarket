@@ -1,7 +1,7 @@
 """
 Pydantic models for API request/response schemas.
 """
-from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator, model_validator
 from typing import Optional, List, Any, Dict
 from datetime import datetime
 from enum import Enum
@@ -168,7 +168,8 @@ class CarbonCreditPurchase(CarbonCreditPurchaseBase):
     status: PurchaseStatus
     retired_quantity: float = 0.0
     last_retirement_date: Optional[datetime] = None
-    credit: Optional[CarbonCredit] = None
+    blockchain_tx_hash: Optional[str] = None
+    credit: Optional['SellerCreditWithProject'] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -484,6 +485,43 @@ class SellerCredit(SellerCreditCreate):
     created_at: datetime
     updated_at: datetime
     listed_at: Optional[datetime] = None
+    
+    model_config = ConfigDict(from_attributes=True)
+
+class SellerCreditWithProject(SellerCredit):
+    """Extended SellerCredit model that includes carbon project details for purchase queries."""
+    carbon_projects: Optional[Dict[str, Any]] = None
+    
+    # Include the required fields directly for Pydantic validation
+    project_name: str = ""
+    project_type: str = ""
+    available_quantity: float = 0.0
+    total_quantity: float = 0.0
+    verification_standard: str = ""
+    project_location: str = ""
+    description: str = ""
+    
+    @model_validator(mode='before')
+    @classmethod
+    def populate_project_fields(cls, values):
+        """Populate project fields from the nested carbon_projects data."""
+        if isinstance(values, dict):
+            carbon_projects = values.get('carbon_projects')
+            if carbon_projects:
+                # Map project fields
+                values['project_name'] = carbon_projects.get('name', '')
+                values['project_type'] = carbon_projects.get('project_type', '')
+                values['verification_standard'] = carbon_projects.get('standard', '')
+                values['project_location'] = carbon_projects.get('location', '')
+                values['description'] = carbon_projects.get('description', '')
+            
+            # Calculate available and total quantity
+            quantity = values.get('quantity', 0)
+            sold_quantity = values.get('sold_quantity', 0)
+            values['available_quantity'] = quantity - sold_quantity
+            values['total_quantity'] = quantity
+        
+        return values
     
     model_config = ConfigDict(from_attributes=True)
 

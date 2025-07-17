@@ -6,3 +6,4 @@ export { default as TermsPage } from './TermsPage';
 export { default as ContactPage } from './ContactPage';
 export { default as APIDocsPage } from './APIDocsPage';
 export { default as GetStartedPage } from './GetStartedPage';
+export { default as ComingSoonPage } from './ComingSoonPage';

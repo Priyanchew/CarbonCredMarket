@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { Button } from '../ui/Button';
-import { Leaf, LogOut, Plus } from 'lucide-react';
+import { LogOut, Plus } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import WalletConnector from '../blockchain/WalletConnector';
 
@@ -66,7 +66,7 @@ export default function Header() {
     <header className="bg-white shadow-sm border-b border-gray-200">
       <div className="px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <Leaf className="h-8 w-8 text-green-600" />
+          <img src="/leaf.svg" alt="Carbon Marketplace" className="h-8 w-8" />
           <div>
             <h1 className="text-xl font-bold text-gray-900">Carbon Marketplace</h1>
             <p className="text-sm text-gray-500">Sustainable Business Solutions</p>
