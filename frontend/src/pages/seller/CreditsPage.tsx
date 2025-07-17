@@ -12,7 +12,6 @@ import {
   Coins, 
   Plus, 
   BarChart3,
-  ExternalLink,
   Wallet,
   Shield,
   CheckCircle,
@@ -73,7 +72,6 @@ export default function CreditsPage() {
       setCredits(creditsData);
       setProjects(projectsData.filter((p: Project) => p.status === 'approved'));
     } catch (error) {
-      console.error('Failed to fetch data:', error);
       addToast('Failed to load credits', 'error');
     } finally {
       setLoading(false);
@@ -98,7 +96,6 @@ export default function CreditsPage() {
       });
       fetchData();
     } catch (error) {
-      console.error('Failed to create credit:', error);
       addToast('Failed to create credit batch', 'error');
     }
   };

@@ -14,9 +14,6 @@ class EmissionService:
     async def create_emission(self, user_id: UUID, emission_data: EmissionCreate) -> Emission:
         """Create a new emission activity."""
         try:
-            print(f"EmissionService.create_emission: user_id={user_id}")
-            print(f"EmissionService.create_emission: emission_data={emission_data.model_dump()}")
-            
             # Prepare data for insertion, ensuring proper datetime serialization
             emission_dict = emission_data.model_dump()
             
@@ -29,22 +26,15 @@ class EmissionService:
                 **emission_dict
             }
             
-            print(f"EmissionService.create_emission: insert_data={insert_data}")
-            
             result = self.db.table("emissions").insert(insert_data).execute()
-
-            print(f"EmissionService.create_emission: result={result}")
             
             if not result.data:
                 raise ValueError("Failed to create emission activity")
             
             emission = Emission.model_validate(result.data[0])
-            print(f"EmissionService.create_emission: created emission={emission}")
             return emission
             
         except Exception as e:
-            print(f"Error in create_emission: {e}")
-            print(f"Error type: {type(e)}")
             raise
 
     async def get_user_emissions(
@@ -83,11 +73,8 @@ class EmissionService:
         if start_date is None:
             start_date = end_date - timedelta(days=90)
         
-        print(f"EmissionService.get_emission_summary: user_id={user_id}, start_date={start_date}, end_date={end_date}")
-        
         # 1. Get overall summary from the view
         stats_result = self.db.table("user_dashboard_stats").select("*").eq("user_id", str(user_id)).execute()
-        print(f"EmissionService stats_result: {stats_result.data}")
         if stats_result.data and len(stats_result.data) > 0:
             stats_data = stats_result.data[0]
         else:
@@ -97,7 +84,6 @@ class EmissionService:
         cat_result = self.db.table("emissions").select("category, co2_equivalent") \
             .eq("user_id", str(user_id)) \
             .execute()
-        print(f"EmissionService cat_result: {cat_result.data}")
 
         emissions_by_category = {}
         for item in cat_result.data or []:
@@ -108,16 +94,12 @@ class EmissionService:
             'p_user_id': str(user_id), 
             'p_start_date': trends_start_date.isoformat()
         }).execute()
-        print(f"EmissionService monthly_trends_result: {monthly_trends_result.data}")
         
         try:
             monthly_trends = [MonthlyTrend.model_validate(t) for t in (monthly_trends_result.data or [])]
         except Exception as e:
-            print(f"Error validating MonthlyTrend: {e}")
-            print(f"MonthlyTrend data: {monthly_trends_result.data}")
             monthly_trends = []
 
-        print(f"EmissionService calculating totals...")
         try:
             # Calculate total emissions from actual data
             total_emissions = sum(emissions_by_category.values()) if emissions_by_category else 0
@@ -134,8 +116,6 @@ class EmissionService:
                 if offset_amount:
                     total_offsets += offset_amount
             
-            print(f"EmissionService calculated total_offsets from emissions: {total_offsets}")
-            
             # Calculate net emissions
             net_emissions = max(0, total_emissions - total_offsets)
             
@@ -144,9 +124,7 @@ class EmissionService:
                 offset_percentage = (total_offsets / total_emissions) * 100
             else:
                 offset_percentage = 0.0
-            print(f"EmissionService total_emissions: {total_emissions}, total_offsets: {total_offsets}, offset_percentage: {offset_percentage}")
         except Exception as e:
-            print(f"Error calculating totals: {e}")
             # Fallback: calculate directly from emissions data
             total_emissions = sum(emissions_by_category.values()) if emissions_by_category else 0
             

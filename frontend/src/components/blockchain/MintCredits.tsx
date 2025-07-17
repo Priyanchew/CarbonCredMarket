@@ -47,7 +47,6 @@ export default function MintCredits({ project, onMinted }: MintCreditsProps) {
       }
       
     } catch (error: unknown) {
-      console.error('Minting failed:', error);
       addToast(
         error instanceof Error ? error.message : 'Failed to mint credits. Please try again.',
         'error'

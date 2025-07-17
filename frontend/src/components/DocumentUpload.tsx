@@ -62,7 +62,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onExtractedData, onClos
         // Continue polling
         setTimeout(poll, 2000);
       } catch (error) {
-        console.error('Polling error:', error);
         setUploadStatus('error');
         setProcessingStatus({
           status: 'error',
@@ -104,7 +103,6 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onExtractedData, onClos
         await handleAsyncUpload(file);
       }
     } catch (error) {
-      console.error('Upload error:', error);
       setUploadStatus('error');
       setProcessingStatus({
         status: 'error',

@@ -14,24 +14,13 @@ export function useAuthPersistence() {
   } = useAuthStore();
 
   useEffect(() => {
-    // Debug logging for authentication state
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Auth State:', {
-        hasToken: !!token,
-        tokenLength: token?.length || 0,
-        isAuthenticated,
-        isInitialized,
-        hasUser: !!user,
-        userName: user?.email || 'none'
-      });
-    }
+    // Debug logging for authentication state (removed for production)
   }, [token, isAuthenticated, isInitialized, user]);
 
   useEffect(() => {
     // Listen for storage changes from other tabs/windows
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'auth-storage' || e.key === 'auth_token') {
-        console.log('Storage changed, reinitializing auth...');
         initialize();
       }
     };
@@ -48,7 +37,6 @@ export function useAuthPersistence() {
         import('../lib/api').then(({ default: apiClient }) => {
           apiClient.validateToken().then((isValid) => {
             if (!isValid) {
-              console.warn('Token validation failed on tab focus');
               useAuthStore.getState().logout();
             }
           });

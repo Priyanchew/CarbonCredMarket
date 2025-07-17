@@ -64,11 +64,9 @@ export default function EmissionsPage() {
   const fetchEmissions = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching all emissions data...');
       
       // Get all emissions without any filtering
       const data = await apiClient.getEmissions();
-      console.log('Received all emissions data:', data);
       
       setAllEmissions(data);
     } catch (error) {

@@ -2,12 +2,11 @@ import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 interface WalletConnectorProps {
-  showBalance?: boolean;
   className?: string;
 }
 
-export default function WalletConnector({ showBalance = true, className = '' }: WalletConnectorProps) {
-  const { address, isConnected } = useAccount();
+export default function WalletConnector({ className = '' }: WalletConnectorProps) {
+  const { isConnected } = useAccount();
 
   if (!isConnected) {
     return (

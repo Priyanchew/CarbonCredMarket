@@ -191,7 +191,6 @@ class MarketplaceService:
                     )
                 
                 blockchain_success = True
-                logger.info(f"Blockchain minting successful: {blockchain_tx_hash}")
                     
             except HTTPException:
                 raise
@@ -214,13 +213,8 @@ class MarketplaceService:
                 "blockchain_tx_hash": blockchain_tx_hash
             }
             
-            logger.info(f"Creating purchase record: {purchase_data_dict}")
-            logger.info(f"Seller credit ID being used: {purchase_data.credit_id}")
-            logger.info(f"Type of credit_id: {type(purchase_data.credit_id)}")
-            
             # Verify the seller credit exists before attempting purchase
             verify_response = self.db.table("seller_credits").select("id").eq("id", str(purchase_data.credit_id)).execute()
-            logger.info(f"Verification response: {verify_response.data}")
             if not verify_response.data:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Seller credit {purchase_data.credit_id} not found in seller_credits table")
             
@@ -259,8 +253,6 @@ class MarketplaceService:
                 self.db.table("carbon_credit_purchases").delete().eq("id", purchase_id).execute()
                 self.db.table("sale_transactions").delete().eq("id", sale_response.data[0]['id']).execute()
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update seller credit inventory")
-            
-            logger.info(f"Purchase completed successfully. Purchase ID: {purchase_id}, Sale ID: {sale_response.data[0]['id']}")
             
             return CarbonCreditPurchase.model_validate(purchase_response.data[0])
             

@@ -64,13 +64,11 @@ class ApiClient {
       
       return null;
     } catch (error) {
-      console.error('Error reading token from storage:', error);
       // Clear corrupted storage
       try {
         localStorage.removeItem('auth-storage');
         localStorage.removeItem('auth_token');
       } catch (clearError) {
-        console.error('Error clearing storage:', clearError);
       }
       return null;
     }
@@ -85,8 +83,7 @@ class ApiClient {
       import('../stores/authStore').then(({ useAuthStore }) => {
         const { logout } = useAuthStore.getState();
         logout();
-      }).catch(error => {
-        console.error('Failed to notify auth store:', error);
+      }).catch(() => {
       });
     }
   }
@@ -142,7 +139,6 @@ class ApiClient {
 
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
       throw error;
     }
   }

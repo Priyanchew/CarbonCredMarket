@@ -80,32 +80,25 @@ class AuthService:
                 "email": email,
                 "password": password
             })
-            print("Supabase auth_response:", auth_response)
             if getattr(auth_response, "error", None):
-                print("Supabase Auth error:", auth_response.error)
                 return None
             # Get the Supabase-generated access token
             session = getattr(auth_response, "session", None)
             if not session or not getattr(session, "access_token", None):
-                print("No session or access_token in auth_response:", auth_response)
                 return None
             access_token = session.access_token
             # Get user ID from the auth response
             user_data = getattr(auth_response, "user", None)
             if not user_data or not hasattr(user_data, "id"):
-                print("No user data in auth_response:", auth_response)
                 return None
             user_id = user_data.id
             # Fetch user profile by ID (not email) to match RLS policy
             result = self.db.table("user_profiles").select("*").eq("id", user_id).execute()
-            print("Supabase user_profiles result:", result)
             if not result.data:
-                print("No user profile found for ID:", user_id)
                 return None
             user = User(**result.data[0])
             return user, access_token
         except Exception as e:
-            print("Exception in authenticate_user:", e)
             return None
 
     async def get_user_by_id(self, user_id: str) -> Optional[User]:

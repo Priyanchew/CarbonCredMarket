@@ -60,7 +60,6 @@ export default function RetireCredits({ onRetired }: RetireCreditsProps) {
       }
       
     } catch (error: unknown) {
-      console.error('Retirement failed:', error);
       addToast(
         error instanceof Error ? error.message : 'Failed to retire credits. Please try again.',
         'error'

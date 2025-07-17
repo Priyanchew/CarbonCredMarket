@@ -99,7 +99,6 @@ class BlockchainService:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             
             if receipt.status == 1:
-                logger.info(f"Successfully minted {amount} credits to {to_address}")
                 return tx_hash.hex()
             else:
                 logger.error("Transaction failed")
@@ -144,7 +143,6 @@ class BlockchainService:
             receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
             
             if receipt.status == 1:
-                logger.info(f"Successfully retired {amount} credits from {from_address}")
                 return tx_hash.hex()
             else:
                 logger.error("Transaction failed")
@@ -203,7 +201,6 @@ class BlockchainService:
             # - Validate amount/value
             # - Check gas usage, etc.
             
-            logger.info(f"Transaction {tx_hash} validated successfully")
             return True
             
         except Exception as e:

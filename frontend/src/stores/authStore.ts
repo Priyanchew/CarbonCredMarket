@@ -65,7 +65,6 @@ export const useAuthStore = create<AuthState>()(
           isInitialized
         })),
       updateSellerVerification: (verification: SellerVerification) => {
-        console.log('Updating seller verification:', verification);
         set((state) => {
           const updatedState = {
             ...state,
@@ -74,7 +73,6 @@ export const useAuthStore = create<AuthState>()(
               seller_verification: verification
             } : null
           };
-          console.log('Updated user state:', updatedState.user);
           return updatedState;
         });
       },
@@ -85,13 +83,11 @@ export const useAuthStore = create<AuthState>()(
         try {
           const { default: apiClient } = await import('../lib/api');
           const user = await apiClient.getCurrentUser();
-          console.log('Refreshed user data:', user);
           set((state) => ({ 
             ...state, 
             user
           }));
         } catch (error) {
-          console.error('Failed to refresh user data:', error);
         }
       },
       initialize: async () => {
@@ -117,7 +113,6 @@ export const useAuthStore = create<AuthState>()(
               }));
             } catch (authError) {
               // Token is invalid, clear it
-              console.warn('Stored token is invalid, clearing authentication:', authError);
               set(() => ({ 
                 user: null, 
                 token: null, 
@@ -135,7 +130,6 @@ export const useAuthStore = create<AuthState>()(
             }));
           }
         } catch (error) {
-          console.error('Failed to initialize auth:', error);
           set((state) => ({ 
             ...state, 
             isLoading: false,

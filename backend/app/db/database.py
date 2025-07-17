@@ -15,7 +15,6 @@ class Database:
                 settings.SUPABASE_URL, 
                 settings.SUPABASE_ANON_KEY  # Use anon key for RLS, set JWT token per request
             )
-            logger.info("Connected to Supabase database")
             return self.supabase
         except Exception as e:
             logger.error(f"Failed to connect to Supabase: {e}")
@@ -35,8 +34,6 @@ class Database:
     
     def get_service_role_client(self) -> Client:
         """Get Supabase client with service role key (bypasses RLS)"""
-        logger.info(f"Creating service role client with URL: {settings.SUPABASE_URL}")
-        logger.info(f"Service role key present: {bool(settings.SUPABASE_SERVICE_ROLE_KEY)}")
         return create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
 
 # Global database instance

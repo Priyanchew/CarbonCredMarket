@@ -67,7 +67,7 @@ class ReportService:
                 emission = self._parse_emission_data(e)
                 emissions.append(emission)
             except Exception as ex:
-                print(f"Error parsing emission {e.get('id', 'unknown')}: {ex}")
+                # Skip invalid emission records
                 continue
         
         return emissions
@@ -89,7 +89,7 @@ class ReportService:
                 purchase = self._parse_purchase_data(p)
                 purchases.append(purchase)
             except Exception as e:
-                print(f"Error parsing purchase {p.get('id', 'unknown')}: {e}")
+                # Skip invalid purchase records
                 continue
         
         return purchases
@@ -651,8 +651,6 @@ class ReportService:
             from reportlab.lib import colors
             import io
             
-            print(f"Starting PDF generation for report: {report.title}")
-            
             # Create PDF buffer
             buffer = io.BytesIO()
             
@@ -685,7 +683,6 @@ class ReportService:
             
             # Add report data based on type
             data = report.data
-            print(f"Report data type: {type(data)}, keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}")
             
             if report.report_type == "emissions_summary":
                 self._add_emissions_summary_to_pdf(story, data, styles)
@@ -698,24 +695,18 @@ class ReportService:
                 self._add_generic_data_to_pdf(story, data, styles)
             
             # Build PDF
-            print("Building PDF document...")
             doc.build(story)
             
             # Get the value of the BytesIO buffer
             pdf_bytes = buffer.getvalue()
             buffer.close()
             
-            print(f"PDF generated successfully. Size: {len(pdf_bytes)} bytes")
             return pdf_bytes
             
         except ImportError as e:
-            print(f"PDF library not available: {e}")
             # Fallback to simple text PDF if reportlab is not available
             return self._create_simple_text_pdf(report)
         except Exception as e:
-            print(f"Error generating PDF: {e}")
-            import traceback
-            traceback.print_exc()
             # Fallback to simple text PDF
             return self._create_simple_text_pdf(report)
 
@@ -772,7 +763,6 @@ class ReportService:
                 story.append(cat_table)
                 
         except Exception as e:
-            print(f"Error adding emissions summary to PDF: {e}")
             # Add basic text if table creation fails
             from reportlab.platypus import Paragraph
             story.append(Paragraph("Summary data available in raw format", styles['Normal']))
@@ -794,7 +784,7 @@ class ReportService:
                 story.append(Paragraph(f"Status: {status}", styles['Normal']))
                 
         except Exception as e:
-            print(f"Error adding compliance data to PDF: {e}")
+            pass
 
     def _add_net_zero_data_to_pdf(self, story, data, styles):
         """Add net-zero progress data to PDF."""
@@ -814,7 +804,7 @@ class ReportService:
                 story.append(Paragraph(f"Net-Zero Achieved: {'Yes' if is_net_zero else 'No'}", styles['Normal']))
                 
         except Exception as e:
-            print(f"Error adding net-zero data to PDF: {e}")
+            pass
 
     def _add_generic_data_to_pdf(self, story, data, styles):
         """Add generic report data to PDF."""
@@ -829,7 +819,6 @@ class ReportService:
 
     def _create_simple_text_pdf(self, report: Report) -> bytes:
         """Create a simple text-based PDF when reportlab is not available."""
-        print("Creating simple text PDF fallback")
         
         # Create a simple text content
         content = f"""

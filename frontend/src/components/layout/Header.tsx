@@ -17,15 +17,12 @@ export default function Header() {
     try {
       setLoading(true);
       const purchases = await apiClient.getUserPurchases();
-      console.log('Purchases fetched:', purchases); // Debug log
       // Calculate available credits by subtracting retired quantity from total quantity
       const totalAvailable = purchases.reduce((total, purchase) => 
         total + (purchase.quantity - purchase.retired_quantity), 0
       );
-      console.log('Total available credits:', totalAvailable); // Debug log
       setAvailableCredits(totalAvailable);
     } catch (error) {
-      console.error('Failed to fetch available credits:', error);
     } finally {
       setLoading(false);
     }
