@@ -39,8 +39,8 @@ async def log_api_usage(
     try:
         supabase = get_service_role_database()  # Use service role to bypass RLS
         
+        # Log data matching the exact table structure
         log_data = {
-            "id": str(uuid.uuid4()),
             "user_id": user["id"],
             "endpoint": endpoint,
             "method": "POST",
@@ -50,20 +50,23 @@ async def log_api_usage(
             "offset_done": offset_done,
             "external_reference_id": external_reference_id,
             "response_status": 200,
-            "created_at": datetime.utcnow().isoformat(),
-            "ip_address": request.client.host if request.client else None
+            "created_at": datetime.utcnow().isoformat()
         }
         
+        logger.info(f"Attempting to log API usage: {log_data}")
         result = supabase.table("api_usage_logs").insert(log_data).execute()
-        logger.info(f"API usage logged successfully: {result.data}")
+        
+        if result.data:
+            logger.info(f"✅ API usage logged successfully: {result.data}")
+        else:
+            logger.error(f"❌ No data returned from API usage log insert")
         
     except Exception as e:
-        logger.error(f"Error logging API usage: {str(e)}")
+        logger.error(f"❌ Error logging API usage: {str(e)}")
         logger.error(f"User ID: {user.get('id', 'N/A')}")
         logger.error(f"Endpoint: {endpoint}")
         logger.error(f"Log data: {log_data if 'log_data' in locals() else 'N/A'}")
         # Don't raise the exception - let the API call continue
-        # Don't raise the error to avoid breaking the API call
 
 @router.post("/emissions", response_model=ExternalEmissionResponse)
 async def estimate_emissions(
@@ -78,6 +81,10 @@ async def estimate_emissions(
     Supports categories: transportation, energy, manufacturing, agriculture, 
     waste, electricity, flight, shipping
     """
+    client_host = request.client.host if request.client else "unknown"
+    logger.info(f"External API emissions request from {client_host} for category: {request_data.category}")
+    logger.info(f"Request data: {request_data}")
+    
     try:
         category = request_data.category
         activity_data = request_data.activity_data
@@ -85,21 +92,33 @@ async def estimate_emissions(
         # Route to appropriate estimation method based on category
         if category == "flight":
             # Use existing flight estimation
+            origin = activity_data.get("origin")
+            destination = activity_data.get("destination")
+            
+            if not origin or not destination:
+                raise HTTPException(status_code=400, detail="Flight category requires 'origin' and 'destination' in activity_data")
+            
             result = await carbon_service.estimate_flight(
                 passengers=activity_data.get("passenger_count", 1),
                 legs=[{
-                    "departure_airport": activity_data.get("origin"),
-                    "destination_airport": activity_data.get("destination")
+                    "departure_airport": str(origin),
+                    "destination_airport": str(destination)
                 }]
             )
             emissions_kg = result["carbon_kg"]
             
         elif category == "shipping":
             # Use existing shipping estimation
+            weight_kg = activity_data.get("weight_kg")
+            distance_km = activity_data.get("distance_km")
+            
+            if weight_kg is None or distance_km is None:
+                raise HTTPException(status_code=400, detail="Shipping category requires 'weight_kg' and 'distance_km' in activity_data")
+            
             result = await carbon_service.estimate_shipping(
-                weight_value=activity_data.get("weight_kg"),
+                weight_value=float(weight_kg),
                 weight_unit="kg",
-                distance_value=activity_data.get("distance_km"),
+                distance_value=float(distance_km),
                 distance_unit="km",
                 transport_method=activity_data.get("transport_method", "truck")
             )

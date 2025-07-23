@@ -257,7 +257,7 @@
                 <div>
                     <h3 class="font-medium text-gray-900 mb-2">Emissions Estimation</h3>
                     <pre class="bg-gray-100 rounded p-3 text-sm overflow-x-auto"><code id="emissionsCode">// Calculate emissions for flight
-const response = await fetch('/external-api/emissions', {
+const response = await fetch('http://16.171.235.251/external-api/emissions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -324,7 +324,7 @@ console.log(`Offset purchased: ${result.certificate_id}`);</code></pre>
 
     <script>
         // Configuration
-        const API_BASE_URL = 'http://localhost:8000';
+        const API_BASE_URL = 'http://16.171.235.251';
         let currentEmissions = 0;
 
         // API Key Toggle
@@ -550,7 +550,7 @@ console.log(`Offset purchased: ${result.certificate_id}`);</code></pre>
             const flightClass = document.getElementById('flightClass').value;
             
             const emissionsCode = `// Calculate emissions for flight
-const response = await fetch('/external-api/emissions', {
+const response = await fetch('http://16.171.235.251/external-api/emissions', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

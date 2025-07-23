@@ -84,13 +84,7 @@ class SellerService:
     async def create_project(self, user_id: UUID, project_data: CarbonProjectCreate) -> CarbonProject:
         """Create a new carbon offset project."""
         try:
-            # Verify seller is approved
-            verification = await self.get_verification_status(user_id)
-            if not verification or verification.status != VerificationStatus.APPROVED:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Seller must be verified to create projects"
-                )
+            # Note: Removed verification requirement - sellers can now create projects without being verified
             
             project_dict = {
                 "seller_id": str(user_id),

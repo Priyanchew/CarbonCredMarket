@@ -77,7 +77,7 @@ const APIDocsPage: React.FC = () => {
                 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Base URL</h3>
                 <div className="bg-gray-900 text-gray-100 rounded-lg p-4 font-mono text-sm mb-4 overflow-x-auto">
-                  <code>https://your-domain.com/external-api</code>
+                  <code>http://16.171.235.251/external-api</code>
                 </div>
 
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Supported Categories</h3>
@@ -285,7 +285,7 @@ console.log('Certificate ID:', offsetData.certificate_id);`}</code>
 
 # Your API key
 API_KEY = 'your-api-key-here'
-BASE_URL = 'https://your-domain.com/external-api'
+BASE_URL = 'http://16.171.235.251/external-api'
 
 headers = {
     'Content-Type': 'application/json',

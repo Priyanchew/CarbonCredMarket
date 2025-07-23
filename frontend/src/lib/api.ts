@@ -33,6 +33,7 @@ import type {
   SaleTransaction,
   SellerAnalytics
 } from '../types';
+import { apiRequestQueue } from '../utils/apiRequestQueue';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -74,6 +75,13 @@ class ApiClient {
     }
   }
 
+  private refreshTokenFromStorage(): void {
+    const storedToken = this.getTokenFromStorage();
+    if (storedToken && storedToken !== this.token) {
+      this.token = storedToken;
+    }
+  }
+
   private handleAuthenticationFailure(): void {
     this.token = null;
     this.logout();
@@ -92,17 +100,23 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${this.baseURL}/api/v1${endpoint}`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    };
+    // Refresh token from storage before each request to ensure we have the latest token
+    this.refreshTokenFromStorage();
+    
+    // If this is a protected request (has auth token), use the request queue
+    const isProtectedRequest = this.token && !endpoint.includes('/auth/');
+    
+    const executeRequest = async (): Promise<T> => {
+      const url = `${this.baseURL}/api/v1${endpoint}`;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options.headers as Record<string, string>),
+      };
 
-    if (this.token) {
-      headers.Authorization = `Bearer ${this.token}`;
-    }
+      if (this.token) {
+        headers.Authorization = `Bearer ${this.token}`;
+      }
 
-    try {
       const response = await fetch(url, {
         ...options,
         headers,
@@ -138,8 +152,13 @@ class ApiClient {
       }
 
       return await response.json();
-    } catch (error) {
-      throw error;
+    };
+
+    // Use request queue for protected requests to avoid race conditions
+    if (isProtectedRequest) {
+      return apiRequestQueue.enqueue(executeRequest);
+    } else {
+      return executeRequest();
     }
   }
 
@@ -152,6 +171,9 @@ class ApiClient {
 
   // Authentication
   async login(credentials: LoginCredentials): Promise<{ user: User; token: string }> {
+    // Mark that authentication is starting
+    apiRequestQueue.startAuthentication();
+    
     const response = await this.request<{ 
       success: boolean; 
       message: string; 
@@ -161,7 +183,14 @@ class ApiClient {
       body: JSON.stringify(credentials),
     });
     
+    // Set token immediately after successful login
     this.setToken(response.data.access_token);
+    
+    // Small delay to ensure token is properly set before returning
+    await new Promise(resolve => setTimeout(resolve, 150));
+    
+    // Mark authentication as complete
+    apiRequestQueue.completeAuthentication();
     
     return {
       user: response.data.user,
@@ -246,6 +275,8 @@ class ApiClient {
     this.token = null;
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth-storage');
+    // Clear the request queue on logout
+    apiRequestQueue.clear();
   }
 
   // Dashboard

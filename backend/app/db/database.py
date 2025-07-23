@@ -21,9 +21,19 @@ class Database:
             raise
     
     def get_client(self) -> Client:
-        """Get Supabase client instance"""
+        """Get Supabase client instance with retry logic"""
         if not self.supabase:
             self.connect()
+        
+        # Test the connection with a simple query to ensure it's working
+        try:
+            # This is a lightweight test query
+            self.supabase.table("user_profiles").select("count").limit(0).execute()
+        except Exception as e:
+            logger.warning(f"Supabase connection test failed, reconnecting: {e}")
+            self.supabase = None
+            self.connect()
+            
         return self.supabase
     
     def get_client_with_token(self, token: str) -> Client:

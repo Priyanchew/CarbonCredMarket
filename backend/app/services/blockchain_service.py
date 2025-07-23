@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class BlockchainService:
     def __init__(self):
         # Connect to remote Hardhat node
-        self.w3 = Web3(Web3.HTTPProvider('http://13.51.170.69:8545'))
+        self.w3 = Web3(Web3.HTTPProvider('http://16.171.235.251:8545'))
         
         # Contract addresses from the blockchain project
         self.contract_addresses = {

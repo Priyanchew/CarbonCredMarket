@@ -144,6 +144,7 @@ export const useAuthStore = create<AuthState>()(
           const { default: apiClient } = await import('../lib/api');
           const response = await apiClient.login(data);
           
+          // Set both token and user simultaneously
           set((state) => ({
             ...state,
             user: response.user,
@@ -152,7 +153,12 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           }));
           
+          // Ensure API client has the token
           apiClient.setToken(response.token);
+          
+          // Add a delay to ensure token is fully synchronized and user profile is available
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
         } catch (error) {
           set((state) => ({ ...state, isLoading: false }));
           throw error;

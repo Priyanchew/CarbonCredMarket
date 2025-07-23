@@ -7,11 +7,11 @@ const localhost = defineChain({
   network: 'localhost',
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
   rpcUrls: {
-    default: { http: ['http://13.51.170.69:8545'] },
-    public: { http: ['http://13.51.170.69:8545'] }
+    default: { http: ['http://16.171.235.251:8545'] },
+    public: { http: ['http://16.171.235.251:8545'] }
   },
   blockExplorers: {
-    default: { name: 'Etherscan', url: 'http://13.51.170.69:8545' },
+    default: { name: 'Etherscan', url: 'http://16.171.235.251:8545' },
   }
 });
 

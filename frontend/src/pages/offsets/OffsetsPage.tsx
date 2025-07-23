@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Leaf, TrendingUp, AlertCircle, Calculator, Clock, Target } from 'lucide-react';
 import { apiClient } from '../../lib/api';
-import RetireCredits from '../../components/blockchain/RetireCredits';
 import type { 
   EmissionActivity, 
   CreditPurchase, 
@@ -18,7 +17,7 @@ export const OffsetsPage: React.FC = () => {
   const [creditAllocation, setCreditAllocation] = useState<{[purchaseId: string]: number}>({});
   const [loading, setLoading] = useState(true);
   const [offsetting, setOffsetting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'available' | 'history' | 'blockchain'>('available');
+  const [activeTab, setActiveTab] = useState<'available' | 'history'>('available');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -413,16 +412,6 @@ export const OffsetsPage: React.FC = () => {
             >
               Offset History ({offsetHistory.length})
             </button>
-            <button
-              onClick={() => setActiveTab('blockchain')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'blockchain'
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Blockchain Retirement
-            </button>
           </nav>
         </div>
 
@@ -556,20 +545,7 @@ export const OffsetsPage: React.FC = () => {
                 </div>
               )}
             </div>
-          ) : (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Blockchain Credit Retirement
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Retire carbon credits directly on the blockchain for permanent and transparent offsetting.
-              </p>
-              
-              <div className="max-w-md">
-                <RetireCredits onRetired={() => fetchData()} />
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

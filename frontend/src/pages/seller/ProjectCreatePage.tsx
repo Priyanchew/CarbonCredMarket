@@ -1,8 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef } from 'react';
 import { useToast } from '../../hooks/useToast';
-import { useVerification } from '../../hooks/useVerification';
-import { useAuthStore } from '../../stores/authStore';
 import { Card, CardContent, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Loading } from '../../components/ui/Loading';
@@ -16,25 +13,11 @@ interface ProjectCreatePageProps {
 
 export default function ProjectCreatePage({ onProjectCreated }: ProjectCreatePageProps) {
   const { addToast } = useToast();
-  const navigate = useNavigate();
-  const { isVerified } = useVerification();
-  const { user, refreshUser } = useAuthStore();
   const documentInputRef = useRef<HTMLInputElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Force refresh user data on component mount to get latest verification status
-  useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
-
-  // Redirect unverified sellers to verification page
-  useEffect(() => {
-    if (user && user.type === 'seller' && !isVerified) {
-      addToast('You must complete verification before creating projects.', 'error');
-      navigate('/app/seller/verification');
-    }
-  }, [isVerified, navigate, addToast, user]);
+  // Note: Removed verification requirement - sellers can now create projects without being verified
   const [formData, setFormData] = useState<CarbonProjectCreate>({
     name: '',
     description: '',

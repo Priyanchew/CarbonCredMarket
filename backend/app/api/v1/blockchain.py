@@ -276,17 +276,18 @@ async def purchase_credits(
         sale_id = sale_response.data[0]['id']
         logger.info(f"Sale transaction created with ID: {sale_id}")
         
-        # Update seller_credits: subtract from quantity and add to sold_quantity
-        # Using SQL function to bypass RLS issues
-        new_quantity = seller_credit.quantity - request.quantity
+        # Update seller_credits: keep original quantity, only update sold_quantity
+        # The quantity field should remain the original total amount
+        # Only sold_quantity should increase
+        original_quantity = seller_credit.quantity  # Keep original quantity
         new_sold_quantity = seller_credit.sold_quantity + request.quantity
-        logger.info(f"Updating seller credit: quantity {seller_credit.quantity} -> {new_quantity}, sold_quantity {seller_credit.sold_quantity} -> {new_sold_quantity}")
+        logger.info(f"Updating seller credit: quantity remains {original_quantity}, sold_quantity {seller_credit.sold_quantity} -> {new_sold_quantity}")
         
         # Use SQL function to update quantities (bypasses RLS)
         try:
             sql_response = db.rpc('update_seller_credit_quantities', {
                 'credit_id': str(request.project_id),
-                'new_quantity': float(new_quantity),
+                'new_quantity': float(original_quantity),
                 'new_sold_quantity': float(new_sold_quantity)
             }).execute()
             logger.info(f"SQL RPC response: {sql_response}")
@@ -299,10 +300,10 @@ async def purchase_credits(
                 logger.info(f"Verification - Updated record: id={updated_record['id']}, quantity={updated_record['quantity']}, sold_quantity={updated_record['sold_quantity']}")
                 
                 # Check if the update actually took effect
-                if updated_record['quantity'] == new_quantity and updated_record['sold_quantity'] == new_sold_quantity:
+                if updated_record['quantity'] == original_quantity and updated_record['sold_quantity'] == new_sold_quantity:
                     logger.info("Update verification successful - quantities match expected values")
                 else:
-                    logger.error(f"Update verification failed! Expected: quantity={new_quantity}, sold_quantity={new_sold_quantity}")
+                    logger.error(f"Update verification failed! Expected: quantity={original_quantity}, sold_quantity={new_sold_quantity}")
                     logger.error(f"Actual: quantity={updated_record['quantity']}, sold_quantity={updated_record['sold_quantity']}")
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

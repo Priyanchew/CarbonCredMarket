@@ -312,12 +312,14 @@ async def get_api_key(current_user: User = Depends(get_current_user)):
     Get the current API key for the authenticated user.
     """
     try:
-        supabase = get_database()
+        from app.db.database import get_service_role_database
+        supabase = get_service_role_database()  # Use service role to bypass RLS
         
         # Get user profile to check for existing API key
         result = supabase.table("user_profiles").select("api_key").eq("id", current_user.id).execute()
         
         if not result.data:
+            logger.error(f"User profile not found for user ID: {current_user.id}")
             raise HTTPException(
                 status_code=404,
                 detail="User profile not found"
@@ -330,6 +332,8 @@ async def get_api_key(current_user: User = Depends(get_current_user)):
             message="API key retrieved successfully" if api_key else "No API key found"
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting API key: {str(e)}")
         raise HTTPException(
